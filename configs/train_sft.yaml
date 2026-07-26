@@ -34,6 +34,9 @@ training:
   per_device_batch_size: 8
   gradient_accumulation_steps: 1
   max_length: 1024
-  bf16: true
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  max_grad_norm: 1.0
+  checkpoint_retention: 2
   tf32: true
   seed: 42

@@ -1,6 +1,13 @@
+import os
+
 import pytest
 
 from helpers import question_from
+
+# Set before any test module imports the Hugging Face stack. A stray from_pretrained
+# or load_dataset then fails loudly instead of quietly downloading 15 GB.
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
 
 
 @pytest.fixture

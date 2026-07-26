@@ -82,12 +82,7 @@ def build_question(record: dict) -> Question:
     )
 
 
-def load_adaptation_pool(dataset_id: str, config: str, split: str) -> list[Question]:
-    if split != ADAPTATION_POOL_SPLIT:
-        raise ValueError(
-            f"adaptation pool must come from the '{ADAPTATION_POOL_SPLIT}' split, got '{split}'"
-        )
-
+def load_split(dataset_id: str, config: str, split: str) -> list[Question]:
     from datasets import load_dataset
 
     rows = load_dataset(dataset_id, config, split=split)
@@ -95,8 +90,19 @@ def load_adaptation_pool(dataset_id: str, config: str, split: str) -> list[Quest
 
     unique = {question.qid for question in questions}
     if len(unique) != len(questions):
-        raise ValueError(f"{len(questions) - len(unique)} duplicate question IDs in the pool")
+        raise ValueError(f"{len(questions) - len(unique)} duplicate question IDs in {split}")
     return questions
+
+
+def load_adaptation_pool(dataset_id: str, config: str, split: str) -> list[Question]:
+    # The only entry point training code is allowed to call. Refusing anything but the
+    # validation split is what makes test leakage structurally impossible rather than
+    # a rule someone has to remember.
+    if split != ADAPTATION_POOL_SPLIT:
+        raise ValueError(
+            f"adaptation pool must come from the '{ADAPTATION_POOL_SPLIT}' split, got '{split}'"
+        )
+    return load_split(dataset_id, config, split)
 
 
 def _stratified_take(groups: dict[int, list[Question]], wanted: int) -> dict[int, int]:
