@@ -8,6 +8,8 @@ version = "0.1.0"
 description = "Cluster qualification, multi-node LoRA fine-tuning, and vLLM inference benchmarking for a Nebius Slurm PoC"
 requires-python = ">=3.11"
 dependencies = [
+    "datasets>=2.19",
+    "numpy>=1.26",
     "pyyaml>=6.0",
 ]
 

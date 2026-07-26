@@ -15,7 +15,7 @@ lint:
 	$(BIN)/ruff check .
 
 prepare-data:
-	@echo "not implemented yet"; exit 1
+	$(BIN)/python -m nebius_poc.data --config configs/train_sft.yaml
 
 smoke:
 	@echo "not implemented yet"; exit 1
