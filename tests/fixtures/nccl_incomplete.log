@@ -1,0 +1,14 @@
+# nThread 1 nGpus 4 minBytes 8 maxBytes 134217728 step: 2(factor) warmup iters: 5 iters: 20 validation: 1
+#
+# Using devices
+#  Rank  0 Group  0 Pid   30001 on worker-0 device  0 [0x00] NVIDIA H200
+#  Rank  1 Group  0 Pid   30002 on worker-0 device  1 [0x00] NVIDIA H200
+#  Rank  2 Group  0 Pid   30003 on worker-1 device  0 [0x00] NVIDIA H200
+#  Rank  3 Group  0 Pid   30004 on worker-1 device  1 [0x00] NVIDIA H200
+#
+#                                                       out-of-place                       in-place
+#       size         count      type   redop     time   algbw   busbw #wrong     time   algbw   busbw #wrong
+#        (B)    (elements)                       (us)  (GB/s)  (GB/s)            (us)  (GB/s)  (GB/s)
+NCCL INFO Bootstrap : Using eth0:10.0.0.1<0>
+NCCL INFO NET/IB : Using [0]mlx5_0:1/IB
+# job killed before any size row was printed

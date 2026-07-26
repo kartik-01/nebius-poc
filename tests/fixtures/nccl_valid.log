@@ -1,0 +1,15 @@
+# nThread 1 nGpus 2 minBytes 8 maxBytes 134217728 step: 2(factor) warmup iters: 5 iters: 20 validation: 1
+#
+# Using devices
+#  Rank  0 Group  0 Pid   10001 on worker-0 device  0 [0x00] NVIDIA H200
+#  Rank  1 Group  0 Pid   10002 on worker-0 device  1 [0x00] NVIDIA H200
+#
+#                                                       out-of-place                       in-place
+#       size         count      type   redop     time   algbw   busbw #wrong     time   algbw   busbw #wrong
+#        (B)    (elements)                       (us)  (GB/s)  (GB/s)            (us)  (GB/s)  (GB/s)
+           8             2     float     sum    15.20    0.00    0.00      0    14.80    0.00    0.00      0
+        1024           256     float     sum    18.40    0.06    0.06      0    17.90    0.06    0.06      0
+     1048576        262144     float     sum   120.00    8.74    8.74      0   118.00    8.89    8.89      0
+  134217728      33554432     float     sum  2100.00   63.91   63.91      0  2050.00   65.47   65.47      0
+# Out of bounds values : 0 OK
+# Avg bus bandwidth    : 18.177500 (GB/s)

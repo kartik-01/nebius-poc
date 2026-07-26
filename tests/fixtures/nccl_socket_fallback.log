@@ -1,0 +1,18 @@
+# nThread 1 nGpus 4 minBytes 8 maxBytes 1048576 step: 2(factor) warmup iters: 5 iters: 20 validation: 1
+#
+# Using devices
+#  Rank  0 Group  0 Pid   40001 on worker-0 device  0 [0x00] NVIDIA H200
+#  Rank  1 Group  0 Pid   40002 on worker-0 device  1 [0x00] NVIDIA H200
+#  Rank  2 Group  0 Pid   40003 on worker-1 device  0 [0x00] NVIDIA H200
+#  Rank  3 Group  0 Pid   40004 on worker-1 device  1 [0x00] NVIDIA H200
+#
+NCCL INFO Bootstrap : Using eth0:10.0.0.1<0>
+NCCL WARN NET/IB : No device found.
+NCCL INFO Using network Socket
+#
+#                                                       out-of-place                       in-place
+#       size         count      type   redop     time   algbw   busbw #wrong     time   algbw   busbw #wrong
+#        (B)    (elements)                       (us)  (GB/s)  (GB/s)            (us)  (GB/s)  (GB/s)
+     1048576        262144     float     sum   900.00    1.16    1.16      0   880.00    1.19    1.19      0
+# Out of bounds values : 0 OK
+# Avg bus bandwidth    : 1.160000 (GB/s)
