@@ -1,0 +1,8 @@
+mode: both
+candidate_labels: [A, B, C, D]
+bootstrap_resamples: 10000
+seed: 42
+generation:
+  do_sample: false
+  temperature: 0.0
+  max_new_tokens: 8

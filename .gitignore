@@ -1,0 +1,61 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+configs/cluster.env
+
+# Local tool state
+.cursor/
+.vscode/
+.idea/
+.local/
+.DS_Store
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+
+# Model and dataset caches
+.cache/
+hf_cache/
+data/
+models/
+checkpoints/
+outputs/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.bin
+
+# Container artifacts
+*.sqsh
+*.sif
+*.tar
+
+# Logs and experiment tracking
+logs/
+runs/
+tensorboard/
+wandb/
+slurm-*.out
+slurm-*.err
+
+# Temporary files
+tmp/
+*.tmp
+*.swp
+
+# Documentation and results are staged by hand, not tracked by default.
+# Use git add -f to include a specific file.
+*.md
+docs/
+results/

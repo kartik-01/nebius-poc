@@ -1,0 +1,39 @@
+objective: candidate_ranking
+
+model:
+  id: Qwen/Qwen2.5-7B-Instruct
+  revision: null
+  dtype: bfloat16
+
+dataset:
+  id: cais/mmlu
+  config: professional_law
+  adaptation_split: validation
+  final_test_split: test
+  pilot_train_size: 150
+  pilot_validation_size: 20
+  seed: 42
+  max_variants_per_question: 4
+
+lora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+training:
+  learning_rate: 1.0e-4
+  epochs: 5
+  per_device_batch_size: 8
+  gradient_accumulation_steps: 1
+  max_length: 1024
+  bf16: true
+  tf32: true
+  seed: 42

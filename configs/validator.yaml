@@ -1,0 +1,20 @@
+expected_nodes: 2
+expected_gpus_total: 4
+expected_gpus_per_node: 2
+expected_gpu_name_pattern: H200
+
+# Resolved from configs/cluster.env at run time.
+local_scratch: ${LOCAL_SCRATCH}
+
+fio_size_gib: 1
+fio_shared_enabled: false
+
+nccl_repetitions: 3
+
+# Relative heuristics, not vendor guarantees.
+variability_warn_cv: 0.10
+node_asymmetry_warn_ratio: 0.10
+
+# Only set from a vendor figure or a reference run on this same platform.
+# Empty means the absolute check reports UNKNOWN.
+absolute_thresholds: {}

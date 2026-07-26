@@ -1,0 +1,15 @@
+objective: output_token_goodput
+concurrency: [1, 8, 16, 32, 64]
+input_tokens: 512
+output_tokens: 128
+warmup_requests: 16
+screening_repetitions: 1
+final_repetitions: 3
+soak_minutes: 10
+
+# Fixed before benchmarking so the operating point isn't picked after the fact.
+# Demonstration limits, not customer SLOs.
+guardrails:
+  p95_ttft_ms: 2000
+  p95_tpot_ms: 100
+  max_error_rate: 0.0
