@@ -128,3 +128,17 @@ def test_coefficient_of_variation_none_for_short_series():
     assert coefficient_of_variation([]) is None
     assert coefficient_of_variation([1.0]) is None
     assert coefficient_of_variation([10.0, 10.0]) == pytest.approx(0.0)
+
+
+def test_rooted_table_does_not_shift_wrong_column():
+    """all_reduce_perf emits a `root` column; ignoring it moved the in-place time
+    into #wrong and turned clean runs into FAIL."""
+    result = parse_nccl_log(_load("nccl_valid_rooted.log"))
+
+    assert result.status == "PASS"
+    assert result.total_wrong == 0
+    assert result.avg_busbw_gbs == pytest.approx(22.2768)
+    assert result.rows[-1].size_bytes == 134217728
+    assert result.rows[-1].busbw_gbs == pytest.approx(122.28)
+    assert result.rows[-1].time_us == pytest.approx(1646.40)
+    assert {rank["node"] for rank in result.ranks} == {"worker-0", "worker-1"}

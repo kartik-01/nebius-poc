@@ -20,6 +20,7 @@ _ROW = re.compile(
     r"(?P<count>\d+)\s+"
     r"(?P<dtype>\S+)\s+"
     r"(?P<redop>\S+)\s+"
+    r"(?:(?P<root>-?\d+)\s+)?"
     r"(?P<time_oop>\S+)\s+"
     r"(?P<algbw_oop>\S+)\s+"
     r"(?P<busbw_oop>\S+)\s+"

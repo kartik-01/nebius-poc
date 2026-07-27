@@ -1,0 +1,22 @@
+# nccl-tests version 2.17.9 nccl-headers=22807 nccl-library=23001
+# Collective test starting: all_reduce_perf_mpi
+# nThread 1 nGpus 1 minBytes 8 maxBytes 134217728 step: 2(factor) warmup iters: 1 iters: 20 agg iters: 1 validation: 1 graph: 0
+#
+# Using devices
+#  Rank  0 Group  0 Pid 1349001 on   worker-0 device  0 [0000:8d:00] NVIDIA H200
+#  Rank  1 Group  0 Pid 1349002 on   worker-0 device  1 [0000:91:00] NVIDIA H200
+#  Rank  2 Group  0 Pid 1349003 on   worker-1 device  0 [0000:8d:00] NVIDIA H200
+#  Rank  3 Group  0 Pid 1349004 on   worker-1 device  1 [0000:91:00] NVIDIA H200
+#
+#                                                              out-of-place                       in-place
+#       size         count      type   redop    root     time   algbw   busbw  #wrong     time   algbw   busbw  #wrong
+#        (B)    (elements)                               (us)  (GB/s)  (GB/s)             (us)  (GB/s)  (GB/s)
+           8             2     float     sum      -1    27.00    0.00    0.00       0    25.89    0.00    0.00       0
+     1048576        262144     float     sum      -1    82.66   12.69   19.03       0   114.34    9.17   13.76       0
+    67108864      16777216     float     sum      -1  1133.89   59.18   88.78       0  1138.18   58.96   88.44       0
+   134217728      33554432     float     sum      -1  1646.40   81.52  122.28       0  1652.19   81.24  121.85       0
+# Out of bounds values : 0 OK
+# Avg bus bandwidth    : 22.2768
+#
+# Collective test concluded: all_reduce_perf_mpi
+#

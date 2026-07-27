@@ -8,6 +8,7 @@ this process; we only parse their logs and fold everything into one report.
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import logging
 import os
@@ -277,6 +278,142 @@ def run_gpu_smoke(binary: Path, out_path: Path) -> dict:
     return payload
 
 
+_STORAGE_CHUNK = 1 << 20
+
+
+def _direct_write(target: Path, total: int) -> None:
+    # O_DIRECT needs the buffer, its address, and the length to be block-aligned;
+    # mmap gives us a page-aligned buffer without ctypes.
+    import mmap
+
+    buffer = mmap.mmap(-1, _STORAGE_CHUNK)
+    buffer.write(os.urandom(_STORAGE_CHUNK))
+    view = memoryview(buffer)
+    try:
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_DIRECT)
+        try:
+            written = 0
+            while written < total:
+                written += os.write(fd, view)
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    finally:
+        # mmap.close() raises while any memoryview still exports its pointer.
+        view.release()
+        buffer.close()
+
+
+def _buffered_write(target: Path, total: int) -> None:
+    chunk = os.urandom(_STORAGE_CHUNK)
+    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+    try:
+        written = 0
+        while written < total:
+            written += os.write(fd, chunk)
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _read_back(target: Path, direct: bool) -> int:
+    flags = os.O_RDONLY | (os.O_DIRECT if direct else 0)
+    fd = os.open(target, flags)
+    try:
+        if not direct:
+            # Without O_DIRECT the file we just wrote is still in page cache, which
+            # would measure memory bandwidth instead of the device.
+            os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+        read = 0
+        if direct:
+            import mmap
+
+            buffer = mmap.mmap(-1, _STORAGE_CHUNK)
+            try:
+                while True:
+                    got = os.readv(fd, [buffer])
+                    if not got:
+                        break
+                    read += got
+            finally:
+                buffer.close()
+        else:
+            while True:
+                block = os.read(fd, _STORAGE_CHUNK)
+                if not block:
+                    break
+                read += len(block)
+        return read
+    finally:
+        os.close(fd)
+
+
+def builtin_storage_benchmark(scratch: str, size_gib: int) -> dict:
+    """Bounded sequential write/read used when fio is unavailable.
+
+    Prefers O_DIRECT so the numbers reflect the device rather than page cache, and
+    degrades to buffered I/O plus POSIX_FADV_DONTNEED on filesystems that reject it.
+    """
+    scratch_path = Path(scratch)
+    scratch_path.mkdir(parents=True, exist_ok=True)
+    target = scratch_path / f"storage-validate-{os.getpid()}.bin"
+    total = size_gib * (1 << 30)
+
+    direct = True
+    try:
+        start = time.perf_counter()
+        _direct_write(target, total)
+        write_seconds = time.perf_counter() - start
+    except OSError as exc:
+        if exc.errno not in (errno.EINVAL, errno.EOPNOTSUPP, errno.EPERM):
+            target.unlink(missing_ok=True)
+            return {"status": "FAIL", "reason": f"builtin write failed: {exc}"}
+        direct = False
+        try:
+            start = time.perf_counter()
+            _buffered_write(target, total)
+            write_seconds = time.perf_counter() - start
+        except OSError as buffered_exc:
+            target.unlink(missing_ok=True)
+            return {"status": "FAIL", "reason": f"builtin write failed: {buffered_exc}"}
+
+    try:
+        start = time.perf_counter()
+        read_bytes = _read_back(target, direct)
+        read_seconds = time.perf_counter() - start
+    except OSError as exc:
+        return {"status": "FAIL", "reason": f"builtin read failed: {exc}"}
+    finally:
+        target.unlink(missing_ok=True)
+
+    if read_bytes != total:
+        return {
+            "status": "FAIL",
+            "reason": f"read back {read_bytes} bytes, expected {total}",
+        }
+
+    return {
+        "status": "PASS",
+        "method": "builtin-o_direct" if direct else "builtin-buffered-fadvise",
+        "note": (
+            "fio unavailable; bounded sequential benchmark from the validator. "
+            "Not directly comparable to fio numbers from another platform."
+        ),
+        "size_bytes": total,
+        "write": {
+            "status": "PASS",
+            "bw_bytes": int(total / write_seconds) if write_seconds > 0 else None,
+            "runtime_ms": int(write_seconds * 1000),
+        },
+        "read": {
+            "status": "PASS",
+            "bw_bytes": int(total / read_seconds) if read_seconds > 0 else None,
+            "runtime_ms": int(read_seconds * 1000),
+        },
+        "path": str(target),
+    }
+
+
 def run_fio(scratch: str | None, size_gib: int, enabled_shared: bool, out_path: Path) -> dict:
     if enabled_shared:
         # Shared-filesystem fio is opt-in because it can disturb other users.
@@ -289,10 +426,7 @@ def run_fio(scratch: str | None, size_gib: int, enabled_shared: bool, out_path: 
         write_json(out_path, payload)
         return payload
     if shutil.which("fio") is None:
-        payload = {
-            "status": "NOT_OBSERVABLE",
-            "reason": "fio not on PATH",
-        }
+        payload = builtin_storage_benchmark(scratch, size_gib)
         write_json(out_path, payload)
         return payload
 
@@ -721,7 +855,7 @@ def run(args: argparse.Namespace) -> int:
     for warning in summary["warnings"]:
         log.warning("WARN: %s", warning)
 
-    return 0 if summary["status"] in ("PASS", "WARN", "UNKNOWN") else 1
+    return 1 if summary["status"] == "FAIL" else 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:

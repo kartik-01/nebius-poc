@@ -105,6 +105,7 @@ def test_augmentation_never_sees_the_held_out_questions(adaptation_pool):
         "Option B is correct",
         "The answer C is correct",
         "(A) or (C)",
+        "a and b",
     ],
 )
 def test_choices_that_name_other_options_are_not_permuted(choice):

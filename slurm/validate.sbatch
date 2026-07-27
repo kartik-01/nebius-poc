@@ -79,20 +79,34 @@ else
   NCCL_BIN="${ALL_REDUCE_MPI:-${ALL_REDUCE}}"
   echo "using NCCL binary: ${NCCL_BIN}"
 
+  # Two cluster-specific details, both discovered rather than assumed:
+  #  1. Compute nodes carry /32 pod addresses on different subnets, so UCX cannot
+  #     build endpoints between them. MPI only bootstraps the test, so route it
+  #     over plain TCP; the collective itself still runs on NCCL over InfiniBand.
+  #  2. nccl-tests picks its device by local rank, so every task must see both
+  #     node GPUs. --gpus-per-task=1 would hide device 1 from the second rank.
+  export OMPI_MCA_pml=ob1
+  export OMPI_MCA_btl=tcp,self
+  export OMPI_MCA_btl_tcp_if_include="${MPI_TCP_IF:-eth0}"
+  export NCCL_DEBUG=INFO
+  export NCCL_DEBUG_SUBSYS=INIT,NET
+
   # Intra-node: 2 GPUs on each node separately.
   mapfile -t NODES < <(scontrol show hostnames "${SLURM_NODELIST}")
   for node in "${NODES[@]}"; do
     srun --nodes=1 --ntasks=1 --gpus=2 --nodelist="${node}" \
       "${NCCL_BIN}" -b 8 -e 128M -f 2 -g 2 \
-      | tee "${OUT}/nccl-intra-${node}.log"
+      > "${OUT}/nccl-intra-${node}.log" 2>&1
+    tail -n 5 "${OUT}/nccl-intra-${node}.log"
   done
 
-  # Inter-node: 4 ranks across 2 nodes, three repetitions.
   REPS="${NCCL_REPETITIONS:-3}"
   for rep in $(seq 1 "${REPS}"); do
-    srun --mpi=pmix --nodes=2 --ntasks=4 --gpus-per-task=1 \
+    NCCL_DEBUG=INFO NCCL_DEBUG_SUBSYS=INIT,NET \
+    srun --mpi=pmix --nodes=2 --ntasks=4 --ntasks-per-node=2 --gpus-per-node=2 \
       "${NCCL_BIN}" -b 8 -e 128M -f 2 -g 1 \
-      | tee "${OUT}/nccl-inter-run-${rep}.log"
+      > "${OUT}/nccl-inter-run-${rep}.log" 2>&1
+    tail -n 5 "${OUT}/nccl-inter-run-${rep}.log"
   done
 fi
 

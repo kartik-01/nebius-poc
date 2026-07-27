@@ -176,7 +176,7 @@ _CHOICE_LABEL_PATTERNS = (
         r"\b(all|none|both|any|either|neither)\s+of\s+the\s+(above|below|following)\b", re.I
     ),
     re.compile(r"\b(choices?|options?|answers?|alternatives?)\s+\(?[A-D]\)?\b", re.I),
-    re.compile(r"\b[A-D]\s+(and|or)\s+[A-D]\b"),
+    re.compile(r"\b[A-D]\s+(and|or)\s+[A-D]\b", re.I),
     re.compile(r"\(\s*[A-D]\s*\)\s*(and|or)\s*\(\s*[A-D]\s*\)"),
 )
 
