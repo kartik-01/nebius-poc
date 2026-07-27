@@ -11,7 +11,7 @@ SMOKE_MODEL ?= Qwen/Qwen2.5-0.5B-Instruct
 SMOKE_ROOT ?= results/raw/smoke
 SMOKE_QUESTIONS ?= 8
 
-.PHONY: install test lint prepare-data smoke
+.PHONY: install test lint prepare-data smoke discover prefetch-smoke
 
 install:
 	python3 -m venv $(VENV)
@@ -27,6 +27,13 @@ lint:
 
 prepare-data:
 	$(BIN)/python -m nebius_poc.data --config configs/train_sft.yaml
+
+discover:
+	./scripts/discover_cluster.sh
+
+prefetch-smoke:
+	$(BIN)/python scripts/prefetch_assets.py --smoke-only --boundary-check-only \
+	  --hf-home $${HF_HOME:-hf_cache} --out results/raw
 
 # Exercises train -> evaluate -> compare -> merge end to end on a small model. Runs
 # the ranking objective because it is the harder of the two code paths.
