@@ -81,3 +81,15 @@ def test_guardrails_are_declared_before_benchmarking():
     assert guardrails["p95_ttft_ms"] > 0
     assert guardrails["p95_tpot_ms"] > 0
     assert guardrails["max_error_rate"] == 0.0
+
+
+def test_validator_dockerfile_keeps_runtime_thin():
+    dockerfile = (
+        Path(__file__).resolve().parents[1] / "containers" / "validator.Dockerfile"
+    ).read_text()
+    # Last FROM stage is the runtime image. The build stage is allowed to use nvcc.
+    runtime = dockerfile[dockerfile.rfind("\nFROM ") :]
+    for forbidden in ("openmpi", "mpich", "transformers", "torch", "vllm", "peft", "nvcc"):
+        assert forbidden not in runtime.lower(), forbidden
+    assert "AS build" in dockerfile
+    assert "gpu_smoke" in dockerfile
