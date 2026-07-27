@@ -1,0 +1,673 @@
+{
+  "status": "WARN",
+  "hard_failures": [],
+  "warnings": [
+    "absolute_thresholds not configured"
+  ],
+  "unknown_checks": [
+    "absolute_performance"
+  ],
+  "inventory": {
+    "hostname": "worker-0",
+    "gpu_count": 2,
+    "gpu_names": [
+      "NVIDIA H200"
+    ],
+    "local_scratch": {
+      "path": "/tmp",
+      "status": "PASS",
+      "reason": null
+    }
+  },
+  "compute": {
+    "status": "PASS",
+    "reason": null,
+    "elapsed_seconds": 1.4849676720332354,
+    "returncode": 0,
+    "detail": {
+      "status": "PASS",
+      "device_count": 2,
+      "elements": 1048576,
+      "devices": [
+        {
+          "device": 0,
+          "name": "NVIDIA H200",
+          "elapsed_ms": 158.072,
+          "mismatches": 0
+        },
+        {
+          "device": 1,
+          "name": "NVIDIA H200",
+          "elapsed_ms": 0.048,
+          "mismatches": 0
+        }
+      ]
+    }
+  },
+  "network": {
+    "status": "PASS",
+    "hard_failures": [],
+    "warnings": [],
+    "unknown_checks": [],
+    "intra": {
+      "worker-0": {
+        "status": "PASS",
+        "rows": [
+          {
+            "size_bytes": 8,
+            "count": 2,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.52,
+            "algbw_gbs": 0.0,
+            "busbw_gbs": 0.0,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 16,
+            "count": 4,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.62,
+            "algbw_gbs": 0.0,
+            "busbw_gbs": 0.0,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 32,
+            "count": 8,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.77,
+            "algbw_gbs": 0.0,
+            "busbw_gbs": 0.0,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 64,
+            "count": 16,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.01,
+            "algbw_gbs": 0.01,
+            "busbw_gbs": 0.01,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 128,
+            "count": 32,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.09,
+            "algbw_gbs": 0.01,
+            "busbw_gbs": 0.01,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 256,
+            "count": 64,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.23,
+            "algbw_gbs": 0.02,
+            "busbw_gbs": 0.02,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 512,
+            "count": 128,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.87,
+            "algbw_gbs": 0.05,
+            "busbw_gbs": 0.05,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 1024,
+            "count": 256,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.28,
+            "algbw_gbs": 0.09,
+            "busbw_gbs": 0.09,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 2048,
+            "count": 512,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.58,
+            "algbw_gbs": 0.18,
+            "busbw_gbs": 0.18,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 4096,
+            "count": 1024,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.51,
+            "algbw_gbs": 0.36,
+            "busbw_gbs": 0.36,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 8192,
+            "count": 2048,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.63,
+            "algbw_gbs": 0.65,
+            "busbw_gbs": 0.65,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 16384,
+            "count": 4096,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.07,
+            "algbw_gbs": 1.48,
+            "busbw_gbs": 1.48,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 32768,
+            "count": 8192,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.57,
+            "algbw_gbs": 2.83,
+            "busbw_gbs": 2.83,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 65536,
+            "count": 16384,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.17,
+            "algbw_gbs": 5.39,
+            "busbw_gbs": 5.39,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 131072,
+            "count": 32768,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 14.81,
+            "algbw_gbs": 8.85,
+            "busbw_gbs": 8.85,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 262144,
+            "count": 65536,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 13.85,
+            "algbw_gbs": 18.93,
+            "busbw_gbs": 18.93,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 524288,
+            "count": 131072,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 13.57,
+            "algbw_gbs": 38.63,
+            "busbw_gbs": 38.63,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 1048576,
+            "count": 262144,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 14.89,
+            "algbw_gbs": 70.41,
+            "busbw_gbs": 70.41,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 2097152,
+            "count": 524288,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 29.8,
+            "algbw_gbs": 70.38,
+            "busbw_gbs": 70.38,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 4194304,
+            "count": 1048576,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 35.98,
+            "algbw_gbs": 116.59,
+            "busbw_gbs": 116.59,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 8388608,
+            "count": 2097152,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 50.13,
+            "algbw_gbs": 167.35,
+            "busbw_gbs": 167.35,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 16777216,
+            "count": 4194304,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 79.05,
+            "algbw_gbs": 212.24,
+            "busbw_gbs": 212.24,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 33554432,
+            "count": 8388608,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 139.02,
+            "algbw_gbs": 241.37,
+            "busbw_gbs": 241.37,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 67108864,
+            "count": 16777216,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 249.5,
+            "algbw_gbs": 268.97,
+            "busbw_gbs": 268.97,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 134217728,
+            "count": 33554432,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 468.81,
+            "algbw_gbs": 286.3,
+            "busbw_gbs": 286.3,
+            "wrong": 0
+          }
+        ],
+        "ranks": [
+          {
+            "rank": 0,
+            "group": 0,
+            "pid": 1370351,
+            "node": "worker-0",
+            "device": 0
+          },
+          {
+            "rank": 1,
+            "group": 0,
+            "pid": 1370351,
+            "node": "worker-0",
+            "device": 1
+          }
+        ],
+        "avg_busbw_gbs": 60.6804,
+        "out_of_bounds": 0,
+        "total_wrong": 0,
+        "socket_fallback": false,
+        "ib_transport": true,
+        "notes": []
+      },
+      "worker-1": {
+        "status": "PASS",
+        "rows": [
+          {
+            "size_bytes": 8,
+            "count": 2,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 13.89,
+            "algbw_gbs": 0.0,
+            "busbw_gbs": 0.0,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 16,
+            "count": 4,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.86,
+            "algbw_gbs": 0.0,
+            "busbw_gbs": 0.0,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 32,
+            "count": 8,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.04,
+            "algbw_gbs": 0.0,
+            "busbw_gbs": 0.0,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 64,
+            "count": 16,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.18,
+            "algbw_gbs": 0.01,
+            "busbw_gbs": 0.01,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 128,
+            "count": 32,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.8,
+            "algbw_gbs": 0.01,
+            "busbw_gbs": 0.01,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 256,
+            "count": 64,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.63,
+            "algbw_gbs": 0.02,
+            "busbw_gbs": 0.02,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 512,
+            "count": 128,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.75,
+            "algbw_gbs": 0.05,
+            "busbw_gbs": 0.05,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 1024,
+            "count": 256,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.87,
+            "algbw_gbs": 0.09,
+            "busbw_gbs": 0.09,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 2048,
+            "count": 512,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.96,
+            "algbw_gbs": 0.19,
+            "busbw_gbs": 0.19,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 4096,
+            "count": 1024,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.38,
+            "algbw_gbs": 0.36,
+            "busbw_gbs": 0.36,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 8192,
+            "count": 2048,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 10.87,
+            "algbw_gbs": 0.75,
+            "busbw_gbs": 0.75,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 16384,
+            "count": 4096,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 11.01,
+            "algbw_gbs": 1.49,
+            "busbw_gbs": 1.49,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 32768,
+            "count": 8192,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 13.41,
+            "algbw_gbs": 2.44,
+            "busbw_gbs": 2.44,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 65536,
+            "count": 16384,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 13.8,
+            "algbw_gbs": 4.75,
+            "busbw_gbs": 4.75,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 131072,
+            "count": 32768,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.16,
+            "algbw_gbs": 10.78,
+            "busbw_gbs": 10.78,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 262144,
+            "count": 65536,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 13.02,
+            "algbw_gbs": 20.14,
+            "busbw_gbs": 20.14,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 524288,
+            "count": 131072,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 12.36,
+            "algbw_gbs": 42.41,
+            "busbw_gbs": 42.41,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 1048576,
+            "count": 262144,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 15.35,
+            "algbw_gbs": 68.3,
+            "busbw_gbs": 68.3,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 2097152,
+            "count": 524288,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 29.71,
+            "algbw_gbs": 70.59,
+            "busbw_gbs": 70.59,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 4194304,
+            "count": 1048576,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 36.07,
+            "algbw_gbs": 116.27,
+            "busbw_gbs": 116.27,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 8388608,
+            "count": 2097152,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 50.01,
+            "algbw_gbs": 167.73,
+            "busbw_gbs": 167.73,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 16777216,
+            "count": 4194304,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 78.89,
+            "algbw_gbs": 212.65,
+            "busbw_gbs": 212.65,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 33554432,
+            "count": 8388608,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 139.33,
+            "algbw_gbs": 240.84,
+            "busbw_gbs": 240.84,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 67108864,
+            "count": 16777216,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 250.36,
+            "algbw_gbs": 268.04,
+            "busbw_gbs": 268.04,
+            "wrong": 0
+          },
+          {
+            "size_bytes": 134217728,
+            "count": 33554432,
+            "dtype": "float",
+            "redop": "sum",
+            "time_us": 471.28,
+            "algbw_gbs": 284.79,
+            "busbw_gbs": 284.79,
+            "wrong": 0
+          }
+        ],
+        "ranks": [
+          {
+            "rank": 0,
+            "group": 0,
+            "pid": 1350987,
+            "node": "worker-1",
+            "device": 0
+          },
+          {
+            "rank": 1,
+            "group": 0,
+            "pid": 1350987,
+            "node": "worker-1",
+            "device": 1
+          }
+        ],
+        "avg_busbw_gbs": 60.767,
+        "out_of_bounds": 0,
+        "total_wrong": 0,
+        "socket_fallback": false,
+        "ib_transport": true,
+        "notes": []
+      }
+    },
+    "inter": {
+      "status": "PASS",
+      "hard_failures": [],
+      "warnings": [],
+      "unknown_checks": [],
+      "busbw_gbs": {
+        "values": [
+          22.4646,
+          22.3298,
+          22.2722
+        ],
+        "min": 22.2722,
+        "median": 22.3298,
+        "max": 22.4646
+      },
+      "cv": 0.0036065835035589125,
+      "total_wrong": 0,
+      "socket_fallback": false,
+      "ib_transport": true
+    },
+    "asymmetry": {
+      "status": "PASS",
+      "ratio": 0.0014251156055096388,
+      "warnings": [],
+      "unknown_checks": [],
+      "busbw_gbs": {
+        "a": 60.6804,
+        "b": 60.767
+      }
+    }
+  },
+  "storage": {
+    "status": "PASS",
+    "method": "builtin-o_direct",
+    "note": "fio unavailable; bounded sequential benchmark from the validator. Not directly comparable to fio numbers from another platform.",
+    "size_bytes": 1073741824,
+    "write": {
+      "status": "PASS",
+      "bw_bytes": 3461796734,
+      "runtime_ms": 310
+    },
+    "read": {
+      "status": "PASS",
+      "bw_bytes": 7393577766,
+      "runtime_ms": 145
+    },
+    "path": "/tmp/storage-validate-1370023.bin"
+  },
+  "stability": {
+    "nccl_cv": 0.0036065835035589125,
+    "intra_asymmetry": 0.0014251156055096388
+  },
+  "absolute_thresholds": {
+    "status": "UNKNOWN",
+    "reason": "absolute_thresholds not configured",
+    "unknown_checks": [
+      "absolute_performance"
+    ]
+  },
+  "artifacts": {
+    "directory": "/results",
+    "node": "node-worker-0.json",
+    "compute": "gpu-smoke-worker-0.json",
+    "storage": "storage-worker-0.json"
+  }
+}

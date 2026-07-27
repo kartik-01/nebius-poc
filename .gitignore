@@ -55,8 +55,12 @@ tmp/
 *.tmp
 *.swp
 
-# Documentation and results are staged by hand, not tracked by default.
+# Raw run artifacts: full logs, checkpoints, per-question outputs. Large and
+# regenerable. The curated summaries under results/summary/ stay tracked as the
+# reviewable record of what actually ran.
+results/raw/
+
+# Prose is staged by hand while it is still being drafted.
 # Use git add -f to include a specific file.
 *.md
 docs/
-results/

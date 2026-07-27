@@ -34,7 +34,20 @@ fi
 
 TOPO_FILE="${ROOT}/configs/serve_topologies.yaml"
 
-mapfile -t TOPO_FIELDS < <(python3 - "${TOPO_FILE}" "${TOPOLOGY}" <<'PY'
+# Compute nodes ship a bare system python without pyyaml, so prefer the repo venv
+# on shared storage. This parsing happens outside the container because it decides
+# the srun geometry.
+PYBIN="python3"
+if ! "${PYBIN}" -c "import yaml" >/dev/null 2>&1; then
+  if [[ -x "${ROOT}/.venv/bin/python" ]] && "${ROOT}/.venv/bin/python" -c "import yaml" >/dev/null 2>&1; then
+    PYBIN="${ROOT}/.venv/bin/python"
+  else
+    echo "no python with pyyaml available; run 'make install' to create .venv" >&2
+    exit 1
+  fi
+fi
+
+mapfile -t TOPO_FIELDS < <("${PYBIN}" - "${TOPO_FILE}" "${TOPOLOGY}" <<'PY'
 import sys, yaml
 cfg = yaml.safe_load(open(sys.argv[1]))
 topo = cfg["topologies"][sys.argv[2]]

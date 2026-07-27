@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -58,6 +59,53 @@ def verify_generation(model, tokenizer, max_new_tokens: int = 16) -> str:
     ).strip()
 
 
+_TOKENIZER_FILES = (
+    "tokenizer_config.json",
+    "tokenizer.json",
+    "vocab.json",
+    "merges.txt",
+    "special_tokens_map.json",
+    "added_tokens.json",
+)
+
+
+def copy_base_tokenizer(model_id: str, revision: str | None, output: Path, tokenizer) -> None:
+    """Publish the base model's own tokenizer files alongside the merged weights.
+
+    A LoRA merge never changes the tokenizer, so re-serialising it with
+    save_pretrained only risks writing a schema the serving runtime cannot read.
+    That is not hypothetical: transformers 5 emits `extra_special_tokens` as a list,
+    and the transformers 4.x inside the pinned vLLM image rejects it. Copying the
+    pinned originals keeps training, evaluation, and serving byte-identical.
+    """
+    from huggingface_hub import snapshot_download
+
+    try:
+        snapshot = Path(
+            snapshot_download(
+                model_id,
+                revision=revision,
+                allow_patterns=list(_TOKENIZER_FILES),
+            )
+        )
+    except Exception as exc:  # noqa: BLE001 - fall back rather than fail the merge
+        log.warning("could not resolve base tokenizer snapshot (%s); saving via transformers", exc)
+        tokenizer.save_pretrained(output)
+        return
+
+    copied = []
+    for name in _TOKENIZER_FILES:
+        source = snapshot / name
+        if source.is_file():
+            shutil.copy2(source, output / name)
+            copied.append(name)
+    if not copied:
+        log.warning("no tokenizer files found in %s; saving via transformers", snapshot)
+        tokenizer.save_pretrained(output)
+        return
+    log.info("copied base tokenizer files: %s", ", ".join(copied))
+
+
 def run(config: dict, args: argparse.Namespace) -> Path:
     model_id = args.model or config["model"]["id"]
     revision = config["model"].get("revision")
@@ -71,7 +119,7 @@ def run(config: dict, args: argparse.Namespace) -> Path:
     tokenizer = load_tokenizer(model_id, revision)
     merged = merge(model_id, revision, args.adapter, dtype)
     merged.save_pretrained(output, safe_serialization=True)
-    tokenizer.save_pretrained(output)
+    copy_base_tokenizer(model_id, revision, output, tokenizer)
 
     sample = verify_generation(merged.eval(), tokenizer)
     log.info("verification generation: %r", sample)

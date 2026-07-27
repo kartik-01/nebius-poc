@@ -19,6 +19,12 @@ HOST="$(hostname -s)"
 ENDPOINT_FILE="${OUT}/endpoints-${HOST}.jsonl"
 PIDS=()
 
+VLLM_PYTHON="$(command -v python3 || command -v python || true)"
+if [[ -z "${VLLM_PYTHON}" ]]; then
+  echo "no python interpreter on PATH inside the vLLM container" >&2
+  exit 1
+fi
+
 : > "${ENDPOINT_FILE}"
 
 cleanup() {
@@ -36,8 +42,9 @@ for replica in $(seq 0 $((REPLICAS_PER_NODE - 1))); do
   LOG="${OUT}/vllm-${HOST}-r${replica}.log"
 
   echo "node=${HOST} replica=${replica} gpus=${GPU_LIST} port=${PORT}"
+  # The official vLLM image ships python3 only; there is no bare `python` on PATH.
   CUDA_VISIBLE_DEVICES="${GPU_LIST}" \
-    python -m vllm.entrypoints.openai.api_server \
+    "${VLLM_PYTHON}" -m vllm.entrypoints.openai.api_server \
       --model "${MODEL_PATH}" \
       --host 0.0.0.0 \
       --port "${PORT}" \

@@ -31,7 +31,7 @@ fi
 
 : "${SHARED_ROOT:?set SHARED_ROOT in configs/cluster.env}"
 : "${VLLM_IMAGE:?set VLLM_IMAGE in configs/cluster.env}"
-: "${SERVE_RUN:?set SERVE_RUN to the serve job's results/raw/<run_id> directory}"
+: "${SERVE_RUN:?set SERVE_RUN to the results/raw/<run_id> directory of the serve job}"
 
 STAGE="${STAGE:-screen}"
 BENCH_CONFIG="${BENCH_CONFIG:-configs/benchmark.yaml}"
@@ -46,7 +46,18 @@ RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_bench-${STAGE}_job${SLURM_JOB_ID}"
 OUT="${SHARED_ROOT}/results/raw/${RUN_ID}"
 mkdir -p "${OUT}"
 
-python3 - "${BENCH_CONFIG}" "${SERVE_RUN}/endpoints.json" "${OUT}" "${STAGE}" <<'PY'
+# Compute nodes ship a bare system python without pyyaml; prefer the repo venv.
+PYBIN="python3"
+if ! "${PYBIN}" -c "import yaml" >/dev/null 2>&1; then
+  if [[ -x "${ROOT}/.venv/bin/python" ]] && "${ROOT}/.venv/bin/python" -c "import yaml" >/dev/null 2>&1; then
+    PYBIN="${ROOT}/.venv/bin/python"
+  else
+    echo "no python with pyyaml available; run 'make install' to create .venv" >&2
+    exit 1
+  fi
+fi
+
+"${PYBIN}" - "${BENCH_CONFIG}" "${SERVE_RUN}/endpoints.json" "${OUT}" "${STAGE}" <<'PY'
 import json, os, sys, yaml
 from pathlib import Path
 
