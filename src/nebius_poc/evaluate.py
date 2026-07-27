@@ -189,7 +189,9 @@ def run(config: dict, evaluation: dict, args: argparse.Namespace) -> Path:
     _, _, _, device = setup_distributed("auto" if args.device == "auto" else args.device)
 
     model_id = args.model or config["model"]["id"]
-    revision = config["model"].get("revision")
+    # The pinned revision belongs to the configured model; a smoke override must
+    # fall back to that model's own default revision.
+    revision = None if model_id != config["model"]["id"] else config["model"].get("revision")
     dataset = config["dataset"]
 
     label = args.label or ("tuned" if args.adapter else "base")

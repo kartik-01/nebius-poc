@@ -294,8 +294,10 @@ def run(config: dict, args: argparse.Namespace) -> Path:
     if args.batch_size:
         training["per_device_batch_size"] = args.batch_size
     config = {**config, "training": training}
-    if args.model:
-        config["model"] = {**config["model"], "id": args.model}
+    if args.model and args.model != config["model"]["id"]:
+        # The pinned revision belongs to the configured model; a smoke override
+        # must fall back to that model's own default revision.
+        config["model"] = {**config["model"], "id": args.model, "revision": None}
 
     objective = config["objective"]
     model_id = config["model"]["id"]

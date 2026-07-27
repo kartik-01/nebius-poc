@@ -31,6 +31,9 @@ nebius_poc_container_python_setup() {
   python -m pip install --no-index --find-links="${wheels}" \
     pyarrow dill multiprocess xxhash pandas fsspec packaging filelock \
     regex requests tqdm typing_extensions psutil pyyaml numpy \
+    click httpx httpcore h11 anyio certifi charset_normalizer idna urllib3 \
+    hf_xet python_dateutil six \
+    aiohttp aiosignal attrs frozenlist multidict propcache yarl aiohappyeyeballs \
     >/tmp/nebius-pip-deps.log 2>&1 \
     || {
       echo "pip install deps from wheelhouse failed; see /tmp/nebius-pip-deps.log" >&2
