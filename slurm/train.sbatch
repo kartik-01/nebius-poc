@@ -85,12 +85,19 @@ fi
 
 FINAL_ARG=""
 LOCK_ARG=""
+MODEL_ARG=""
 if [[ "${TRAIN_FINAL}" == "1" ]]; then
   FINAL_ARG="--final"
 fi
 if [[ -n "${RECIPE_LOCK}" ]]; then
   LOCK_ARG="--recipe-lock ${RECIPE_LOCK}"
 fi
+# TRAIN_MODEL exists so the multi-node path can be rehearsed on the 0.5B model
+# before spending an allocation on the 7B run. Leave unset for real training.
+if [[ -n "${TRAIN_MODEL:-}" ]]; then
+  MODEL_ARG="--model ${TRAIN_MODEL}"
+fi
+EXTRA_ARGS="${TRAIN_EXTRA_ARGS:-}"
 
 echo "run_id=${RUN_ID} config=${CONFIG} final=${TRAIN_FINAL} master=${MASTER_ADDR}:${MASTER_PORT}"
 
@@ -114,7 +121,7 @@ srun --nodes=2 --ntasks=2 --ntasks-per-node=1 --kill-on-bad-exit=1 \
       -m nebius_poc.train \
       --config ${CONFIG} \
       --results-root /results \
-      ${FINAL_ARG} ${LOCK_ARG}
+      ${FINAL_ARG} ${LOCK_ARG} ${MODEL_ARG} ${EXTRA_ARGS}
   "
 
 echo "training artifacts in ${OUT}"
