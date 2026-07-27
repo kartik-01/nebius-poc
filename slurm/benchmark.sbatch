@@ -35,7 +35,18 @@ fi
 
 STAGE="${STAGE:-screen}"
 BENCH_CONFIG="${BENCH_CONFIG:-configs/benchmark.yaml}"
-MODEL_NAME="${MODEL_NAME:-merged}"
+
+# vLLM serves the model under the exact path it was launched with, and the bench
+# client reuses that same string to load the tokenizer. So the served id must be
+# the absolute model path, and that path must be mounted at the same location in
+# the client container.
+SERVED_MODEL="$(sed -n 's/.*"model_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+  "${SERVE_RUN}/serve_manifest.json" 2>/dev/null || true)"
+MODEL_NAME="${MODEL_NAME:-${SERVED_MODEL}}"
+if [[ -z "${MODEL_NAME}" ]]; then
+  echo "could not determine served model path from ${SERVE_RUN}/serve_manifest.json" >&2
+  exit 2
+fi
 
 if [[ ! -f "${SERVE_RUN}/endpoints.json" ]]; then
   echo "missing ${SERVE_RUN}/endpoints.json — is the serve job ready?" >&2
@@ -103,6 +114,10 @@ MOUNTS=(
   "${OUT}:/results"
   "${SERVE_RUN}:/serve"
 )
+# Same path inside the client so --model resolves as a local tokenizer directory.
+if [[ -d "${MODEL_NAME}" ]]; then
+  MOUNTS+=("${MODEL_NAME}:${MODEL_NAME}")
+fi
 if [[ -n "${CONTAINER_MOUNTS:-}" ]]; then
   MOUNTS+=("${CONTAINER_MOUNTS}")
 fi

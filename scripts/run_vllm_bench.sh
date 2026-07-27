@@ -36,6 +36,19 @@ num_replicas = len(base_urls)
 base_prompts = 256
 prompts_per_replica = max(base_prompts // num_replicas, warmup + 8)
 
+# The benchmark CLI changes shape across vLLM releases: 0.8.5 has no --backend and
+# no --save-detailed, while newer builds have both. Probe once and only pass flags
+# this build actually accepts, so the same script works on a customer's version.
+help_text = subprocess.run(
+    ["vllm", "bench", "serve", "--help"],
+    capture_output=True, text=True, check=False,
+).stdout
+
+
+def supports(flag: str) -> bool:
+    return flag in help_text
+
+
 jobs = []
 for conc in concurrencies:
     for rep in range(1, reps + 1):
@@ -44,10 +57,12 @@ for conc in concurrencies:
             result_dir = out / tag
             result_dir.mkdir(parents=True, exist_ok=True)
             seed = 10_000 + conc * 100 + rep * 10 + index
+            # endpoints.json stores OpenAI-style base URLs ending in /v1, but the
+            # bench client wants the server root and adds --endpoint itself.
+            server_root = base_url[: -len("/v1")] if base_url.endswith("/v1") else base_url
             cmd = [
                 "vllm", "bench", "serve",
-                "--backend", "vllm",
-                "--base-url", base_url,
+                "--base-url", server_root,
                 "--model", model,
                 "--endpoint", "/v1/completions",
                 "--dataset-name", "random",
@@ -60,8 +75,14 @@ for conc in concurrencies:
                 "--result-dir", str(result_dir),
                 "--result-filename", "bench.json",
             ]
-            # Newer vLLM builds accept --save-detailed; keep best-effort.
-            detailed_cmd = cmd + ["--save-detailed"]
+            if supports("--backend"):
+                cmd += ["--backend", "vllm"]
+            # Defaults report p99 only; the goodput guardrails need p50 and p95 too.
+            if supports("--percentile-metrics"):
+                cmd += ["--percentile-metrics", "ttft,tpot,itl,e2el"]
+            if supports("--metric-percentiles"):
+                cmd += ["--metric-percentiles", "50,95,99"]
+            detailed_cmd = cmd + ["--save-detailed"] if supports("--save-detailed") else list(cmd)
             meta = {
                 "tag": tag,
                 "stage": stage,
