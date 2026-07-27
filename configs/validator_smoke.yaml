@@ -1,0 +1,17 @@
+# One-GPU smoke expectations. Full qualification still uses configs/validator.yaml.
+expected_nodes: 1
+expected_gpus_total: 1
+expected_gpus_per_node: 1
+expected_gpu_name_pattern: H200
+
+local_scratch: ${LOCAL_SCRATCH}
+
+fio_size_gib: 1
+fio_shared_enabled: false
+
+nccl_repetitions: 1
+
+variability_warn_cv: 0.10
+node_asymmetry_warn_ratio: 0.10
+
+absolute_thresholds: {}

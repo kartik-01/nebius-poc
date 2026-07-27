@@ -63,16 +63,10 @@ srun --ntasks="${SLURM_NNODES}" --ntasks-per-node=1 \
   "${MOUNT_ARGS[@]}" \
   --container-workdir=/workspace \
   --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE,PYTHONPATH=/workspace \
-  bash -lc '
-    set -euo pipefail
-    # shellcheck disable=SC1091
-    source /workspace/scripts/container_python_setup.sh
-    nebius_poc_container_python_setup
-    python3 -m validator.cluster_validate \
-      --config /workspace/configs/validator.yaml \
-      --out /results \
-      '"${SMOKE_ARGS[*]}"'
-  '
+  python3 -m validator.cluster_validate \
+    --config /workspace/configs/validator.yaml \
+    --out /results \
+    ${SMOKE_ARGS[@]+"${SMOKE_ARGS[@]}"}
 
 # --- Provider-native NCCL: discover binaries at runtime, never bake paths in ---
 ALL_REDUCE="$(command -v all_reduce_perf || true)"
@@ -108,17 +102,11 @@ srun --nodes=1 --ntasks=1 --gpus=0 \
   "${MOUNT_ARGS[@]}" \
   --container-workdir=/workspace \
   --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE,PYTHONPATH=/workspace \
-  bash -lc '
-    set -euo pipefail
-    # shellcheck disable=SC1091
-    source /workspace/scripts/container_python_setup.sh
-    nebius_poc_container_python_setup
-    python3 -m validator.cluster_validate \
-      --config /workspace/configs/validator.yaml \
-      --out /results \
-      --nccl-dir /results \
-      --aggregate-only
-  '
+  python3 -m validator.cluster_validate \
+    --config /workspace/configs/validator.yaml \
+    --out /results \
+    --nccl-dir /results \
+    --aggregate-only
 
 echo "validation artifacts in ${OUT}"
 echo "summary:"

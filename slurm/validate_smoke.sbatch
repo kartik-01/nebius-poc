@@ -57,16 +57,10 @@ srun --ntasks=1 --gpus=1 --kill-on-bad-exit=1 \
   --container-mounts="${MOUNT_CSV}" \
   --container-workdir=/workspace \
   --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE,PYTHONPATH=/workspace \
-  bash -lc '
-    set -euo pipefail
-    # shellcheck disable=SC1091
-    source /workspace/scripts/container_python_setup.sh
-    nebius_poc_container_python_setup
-    python3 -m validator.cluster_validate \
-      --config /workspace/configs/validator.yaml \
-      --out /results \
-      '"${SMOKE_ARG[*]}"'
-  '
+  python3 -m validator.cluster_validate \
+    --config /workspace/configs/validator_smoke.yaml \
+    --out /results \
+    ${SMOKE_ARG[@]+"${SMOKE_ARG[@]}"}
 
 echo "smoke artifacts in ${OUT}"
 cat "${OUT}/summary.json"
