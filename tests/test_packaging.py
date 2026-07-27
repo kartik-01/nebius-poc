@@ -53,14 +53,26 @@ def test_config_parses_and_has_required_keys(name):
 
 def test_pilot_configs_differ_only_by_objective():
     # The pilot only means anything if the objective is the one thing that changes.
+    # Ranking forwards four candidates per question, so it has to use a smaller
+    # micro-batch to fit in memory; accumulation restores the same effective batch.
+    # That split is a memory detail, not an experimental variable, so compare the
+    # effective batch and require everything else to match exactly.
     sft = load_config("train_sft.yaml")
     ranking = load_config("train_ranking.yaml")
 
     assert sft["objective"] == "completion_sft"
     assert ranking["objective"] == "candidate_ranking"
 
-    sft.pop("objective")
-    ranking.pop("objective")
+    def effective_batch(config: dict) -> int:
+        training = config["training"]
+        return training["per_device_batch_size"] * training["gradient_accumulation_steps"]
+
+    assert effective_batch(sft) == effective_batch(ranking)
+
+    for config in (sft, ranking):
+        config.pop("objective")
+        for key in ("per_device_batch_size", "gradient_accumulation_steps"):
+            config["training"].pop(key)
     assert sft == ranking
 
 

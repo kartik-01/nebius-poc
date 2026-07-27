@@ -293,6 +293,10 @@ def run(config: dict, args: argparse.Namespace) -> Path:
     training = dict(config["training"])
     if args.batch_size:
         training["per_device_batch_size"] = args.batch_size
+    if args.epochs:
+        training["epochs"] = args.epochs
+    if args.learning_rate:
+        training["learning_rate"] = args.learning_rate
     config = {**config, "training": training}
     if args.model and args.model != config["model"]["id"]:
         # The pinned revision belongs to the configured model; a smoke override
@@ -479,6 +483,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--results-root", type=Path, default=Path("results/raw"))
     parser.add_argument("--max-steps", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=0)
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=0,
+        help="override the configured epoch count during pilot selection",
+    )
+    parser.add_argument(
+        "--learning-rate",
+        type=float,
+        default=0.0,
+        help="override the configured learning rate during pilot selection",
+    )
     parser.add_argument("--limit", type=int, default=0, help="cap the number of source questions")
     parser.add_argument(
         "--final",

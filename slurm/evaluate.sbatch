@@ -41,6 +41,9 @@ MODE="${EVAL_MODE:-both}"
 ADAPTER="${EVAL_ADAPTER:-}"
 IDS_FILE="${IDS_FILE:-}"
 LIMIT="${EVAL_LIMIT:-0}"
+# Scoring runs without gradients, so the full test split tolerates a much larger
+# batch than training does. Raise this to shorten the 1,534-question evaluations.
+BATCH_SIZE="${EVAL_BATCH_SIZE:-0}"
 
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_evaluate-${LABEL}_job${SLURM_JOB_ID}"
 OUT="${SHARED_ROOT}/results/raw/${RUN_ID}"
@@ -75,6 +78,9 @@ if [[ -n "${IDS_FILE}" ]]; then
 fi
 if [[ "${LIMIT}" != "0" ]]; then
   EXTRA+=(--limit "${LIMIT}")
+fi
+if [[ "${BATCH_SIZE}" != "0" ]]; then
+  EXTRA+=(--batch-size "${BATCH_SIZE}")
 fi
 
 echo "evaluate label=${LABEL} split=${SPLIT} mode=${MODE} config=${CONFIG}"

@@ -33,11 +33,13 @@ lora:
 training:
   learning_rate: 1.0e-4
   epochs: 5
-  # Deliberately identical to train_sft.yaml. This objective forwards all four
-  # candidates per question, so it costs four times the activations at the same batch
-  # size, but changing the batch size would confound the objective comparison.
-  per_device_batch_size: 8
-  gradient_accumulation_steps: 1
+  # This objective forwards all four candidates per question, so a micro-batch of 8
+  # questions puts 32 sequences on the GPU and OOMs at 140 GiB. Two questions gives
+  # the same 8 sequences in flight as train_sft.yaml, and accumulating four of them
+  # restores the identical effective batch of 8 questions per optimizer step, so the
+  # objective comparison stays controlled.
+  per_device_batch_size: 2
+  gradient_accumulation_steps: 4
   max_length: 1024
   weight_decay: 0.01
   warmup_ratio: 0.05
