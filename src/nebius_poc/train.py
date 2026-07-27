@@ -223,7 +223,12 @@ def prune_checkpoints(root: Path, keep: int) -> None:
 
 def build_dataset(config: dict, tokenizer, limit: int | None) -> tuple[list[EncodedExample], dict]:
     dataset = config["dataset"]
-    pool = load_adaptation_pool(dataset["id"], dataset["config"], dataset["adaptation_split"])
+    pool = load_adaptation_pool(
+        dataset["id"],
+        dataset["config"],
+        dataset["adaptation_split"],
+        revision=dataset.get("revision"),
+    )
     train, held_out = split_adaptation_pool(
         pool, dataset["pilot_train_size"], dataset["pilot_validation_size"], dataset["seed"]
     )
@@ -231,7 +236,13 @@ def build_dataset(config: dict, tokenizer, limit: int | None) -> tuple[list[Enco
         train = train[:limit]
 
     variants = expand(train, dataset["max_variants_per_question"])
-    manifest = split_manifest(train, held_out, dataset["seed"], dataset)
+    manifest = split_manifest(
+        train,
+        held_out,
+        dataset["seed"],
+        dataset,
+        dataset_revision=dataset.get("revision"),
+    )
     manifest["training_rows_after_augmentation"] = len(variants)
     return encode_variants(variants, tokenizer), manifest
 

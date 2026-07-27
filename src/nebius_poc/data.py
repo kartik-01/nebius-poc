@@ -82,10 +82,25 @@ def build_question(record: dict) -> Question:
     )
 
 
-def load_split(dataset_id: str, config: str, split: str) -> list[Question]:
+def load_adaptation_pool(
+    dataset_id: str, config: str, split: str, revision: str | None = None
+) -> list[Question]:
+    # The only entry point training code is allowed to call. Refusing anything but the
+    # validation split is what makes test leakage structurally impossible rather than
+    # a rule someone has to remember.
+    if split != ADAPTATION_POOL_SPLIT:
+        raise ValueError(
+            f"adaptation pool must come from the '{ADAPTATION_POOL_SPLIT}' split, got '{split}'"
+        )
+    return load_split(dataset_id, config, split, revision=revision)
+
+
+def load_split(
+    dataset_id: str, config: str, split: str, revision: str | None = None
+) -> list[Question]:
     from datasets import load_dataset
 
-    rows = load_dataset(dataset_id, config, split=split)
+    rows = load_dataset(dataset_id, config, split=split, revision=revision)
     questions = [build_question(row) for row in rows]
 
     unique = {question.qid for question in questions}
@@ -94,15 +109,14 @@ def load_split(dataset_id: str, config: str, split: str) -> list[Question]:
     return questions
 
 
-def load_adaptation_pool(dataset_id: str, config: str, split: str) -> list[Question]:
-    # The only entry point training code is allowed to call. Refusing anything but the
-    # validation split is what makes test leakage structurally impossible rather than
-    # a rule someone has to remember.
-    if split != ADAPTATION_POOL_SPLIT:
-        raise ValueError(
-            f"adaptation pool must come from the '{ADAPTATION_POOL_SPLIT}' split, got '{split}'"
-        )
-    return load_split(dataset_id, config, split)
+def resolve_dataset_revision(dataset_id: str, revision: str | None = None) -> str:
+    from huggingface_hub import HfApi
+
+    info = HfApi().dataset_info(dataset_id, revision=revision)
+    sha = getattr(info, "sha", None)
+    if not sha:
+        raise RuntimeError(f"could not resolve dataset revision for {dataset_id}")
+    return str(sha)
 
 
 def _stratified_take(groups: dict[int, list[Question]], wanted: int) -> dict[int, int]:
@@ -289,7 +303,12 @@ def augmentation_audit(
 
 
 def split_manifest(
-    train: Sequence[Question], validation: Sequence[Question], seed: int, dataset: dict
+    train: Sequence[Question],
+    validation: Sequence[Question],
+    seed: int,
+    dataset: dict,
+    *,
+    dataset_revision: str | None = None,
 ) -> dict:
     def balance(questions: Sequence[Question]) -> dict[str, int]:
         counts = dict.fromkeys(LABELS, 0)
@@ -299,6 +318,7 @@ def split_manifest(
 
     return {
         "dataset": dataset,
+        "dataset_revision": dataset_revision,
         "seed": seed,
         "adaptation_pool_size": len(train) + len(validation),
         "pilot_train_size": len(train),
@@ -339,7 +359,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     dataset = config["dataset"]
 
     questions = load_adaptation_pool(
-        dataset["id"], dataset["config"], dataset["adaptation_split"]
+        dataset["id"],
+        dataset["config"],
+        dataset["adaptation_split"],
+        revision=dataset.get("revision"),
     )
     log.info("loaded %d records from the adaptation pool", len(questions))
 
@@ -351,7 +374,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     audit = augmentation_audit(train, dataset["max_variants_per_question"])
-    manifest = split_manifest(train, validation, dataset["seed"], dataset)
+    try:
+        dataset_revision = dataset.get("revision") or resolve_dataset_revision(dataset["id"])
+    except (OSError, RuntimeError, ValueError, ConnectionError) as exc:
+        log.warning("could not resolve dataset revision: %s", exc)
+        dataset_revision = dataset.get("revision")
+    manifest = split_manifest(
+        train, validation, dataset["seed"], dataset, dataset_revision=dataset_revision
+    )
 
     out = _run_directory(args.results_root)
     (out / "split_manifest.json").write_text(json.dumps(manifest, indent=2))

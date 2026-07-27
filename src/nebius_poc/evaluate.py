@@ -8,6 +8,7 @@ learns to emit a bare letter has improved its formatting, not its law.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import re
 from collections.abc import Sequence
@@ -138,6 +139,50 @@ def accuracy(rows: Sequence[dict]) -> float:
     return sum(1 for row in rows if row["correct"]) / len(rows) if rows else 0.0
 
 
+def gold_choice_nll(row: dict) -> float:
+    """Negative log-likelihood of the gold letter under the forced-choice scores."""
+    gold = str(row["gold_answer"]).lower()
+    key = f"score_{gold}"
+    if key not in row:
+        raise KeyError(f"missing {key} in forced-choice row")
+    return -float(row[key])
+
+
+def mean_gold_choice_nll(rows: Sequence[dict]) -> float:
+    if not rows:
+        return 0.0
+    return sum(gold_choice_nll(row) for row in rows) / len(rows)
+
+
+def load_id_list(path: Path) -> list[str]:
+    text = Path(path).read_text().strip()
+    if not text:
+        return []
+    if path.suffix == ".json":
+        payload = json.loads(text)
+        if isinstance(payload, list):
+            return [str(item) for item in payload]
+        for key in ("pilot_validation_ids", "question_ids", "ids"):
+            if key in payload:
+                return [str(item) for item in payload[key]]
+        raise ValueError(f"{path} JSON has no id list")
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def filter_questions_by_ids(
+    questions: Sequence[Question], ids: Sequence[str]
+) -> list[Question]:
+    wanted = set(ids)
+    selected = [question for question in questions if question.qid in wanted]
+    missing = wanted - {question.qid for question in selected}
+    if missing:
+        sample = ", ".join(sorted(missing)[:5])
+        raise ValueError(f"{len(missing)} ids not found in split (e.g. {sample})")
+    # Keep the caller-provided order so paired comparisons stay stable.
+    by_id = {question.qid: question for question in selected}
+    return [by_id[qid] for qid in ids]
+
+
 def run(config: dict, evaluation: dict, args: argparse.Namespace) -> Path:
     from nebius_poc.train import load_tokenizer
 
@@ -151,6 +196,10 @@ def run(config: dict, evaluation: dict, args: argparse.Namespace) -> Path:
     run_dir, manifest = open_run(f"evaluate-{label}", args.results_root, config)
 
     questions = load_split(dataset["id"], dataset["config"], args.split)
+    if args.ids_file:
+        ids = load_id_list(args.ids_file)
+        questions = filter_questions_by_ids(questions, ids)
+        log.info("filtered to %d ids from %s", len(questions), args.ids_file)
     if args.limit:
         questions = questions[: args.limit]
     log.info("evaluating %s on %d %s questions", label, len(questions), args.split)
@@ -168,8 +217,13 @@ def run(config: dict, evaluation: dict, args: argparse.Namespace) -> Path:
         )
         write_jsonl(run_dir / "forced_choice.jsonl", rows)
         summary["forced_choice_accuracy"] = accuracy(rows)
+        summary["mean_gold_choice_nll"] = mean_gold_choice_nll(rows)
         artifacts["forced_choice"] = str(run_dir / "forced_choice.jsonl")
-        log.info("forced-choice accuracy %.4f", summary["forced_choice_accuracy"])
+        log.info(
+            "forced-choice accuracy %.4f, mean gold NLL %.4f",
+            summary["forced_choice_accuracy"],
+            summary["mean_gold_choice_nll"],
+        )
 
     if args.mode in ("generation", "both"):
         rows = generate_answers(
@@ -202,6 +256,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--adapter", type=Path)
     parser.add_argument("--label", help="name used in the run directory and summary")
     parser.add_argument("--split", default="test")
+    parser.add_argument(
+        "--ids-file",
+        type=Path,
+        help="JSON split_manifest or newline id list; restricts evaluation to those IDs",
+    )
     parser.add_argument("--mode", choices=("forced_choice", "generation", "both"), default="both")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=8)
