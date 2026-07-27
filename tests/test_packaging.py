@@ -94,3 +94,24 @@ def test_validator_dockerfile_keeps_runtime_thin():
         assert forbidden not in runtime.lower(), forbidden
     assert "AS build" in dockerfile
     assert "gpu_smoke" in dockerfile
+
+
+def test_slurm_launchers_cover_the_offline_scaffolded_stages():
+    root = Path(__file__).resolve().parents[1] / "slurm"
+    expected = {
+        "validate.sbatch",
+        "validate_smoke.sbatch",
+        "train.sbatch",
+        "train_smoke.sbatch",
+        "evaluate.sbatch",
+        "merge.sbatch",
+        "serve.sbatch",
+        "benchmark.sbatch",
+    }
+    assert expected.issubset({path.name for path in root.glob("*.sbatch")})
+    train = (root / "train.sbatch").read_text()
+    assert "TRAIN_FINAL" in train
+    assert "RECIPE_LOCK" in train
+    assert "--final" in train
+    merge = (root / "merge.sbatch").read_text()
+    assert "nebius_poc.merge_adapter" in merge

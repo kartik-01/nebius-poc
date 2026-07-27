@@ -94,6 +94,80 @@ def build_recipe_lock(
     }
 
 
+def apply_recipe_lock(config: dict, lock: dict) -> dict:
+    """Overlay a locked recipe onto a training config.
+
+    The lock wins for objective and hyperparameters so final training cannot silently
+    drift from the pilot decision. Dataset identity is checked, not overwritten, so a
+    mismatched lock fails loudly.
+    """
+    dataset = config["dataset"]
+    locked_dataset = lock.get("dataset") or {}
+    for key in ("id", "config", "adaptation_split", "final_test_split", "seed"):
+        if key in locked_dataset and dataset.get(key) != locked_dataset[key]:
+            raise ValueError(
+                f"recipe lock dataset.{key}={locked_dataset[key]!r} does not match "
+                f"config {dataset.get(key)!r}"
+            )
+
+    updated = {
+        **config,
+        "objective": lock["objective"],
+        "lora": {
+            **config["lora"],
+            "rank": int(lock["lora_rank"]),
+            "alpha": lock.get("lora_alpha", config["lora"]["alpha"]),
+            "dropout": lock.get("lora_dropout", config["lora"]["dropout"]),
+            "target_modules": list(
+                lock.get("lora_target_modules") or config["lora"]["target_modules"]
+            ),
+        },
+        "training": {
+            **config["training"],
+            "learning_rate": float(lock["learning_rate"]),
+            "epochs": int(lock["epochs"]),
+            "max_length": int(lock["max_length"]),
+            "per_device_batch_size": int(
+                lock.get("per_device_batch_size", config["training"]["per_device_batch_size"])
+            ),
+            "gradient_accumulation_steps": int(
+                lock.get(
+                    "gradient_accumulation_steps",
+                    config["training"]["gradient_accumulation_steps"],
+                )
+            ),
+            "seed": int(lock.get("seed", config["training"]["seed"])),
+        },
+        "model": {
+            **config["model"],
+            **{
+                key: lock["model"][key]
+                for key in ("id", "revision", "dtype")
+                if lock.get("model") and key in lock["model"] and lock["model"][key] is not None
+            },
+        },
+    }
+    return updated
+
+
+def load_recipe_lock(path: Path) -> dict:
+    import json
+
+    lock = json.loads(Path(path).read_text())
+    required = {
+        "objective",
+        "learning_rate",
+        "lora_rank",
+        "epochs",
+        "max_length",
+        "dataset",
+    }
+    missing = required - lock.keys()
+    if missing:
+        raise ValueError(f"{path} is missing lock fields: {sorted(missing)}")
+    return lock
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Compare pilot forced-choice runs and optionally write recipe_lock.json"

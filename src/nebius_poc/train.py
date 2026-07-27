@@ -221,7 +221,13 @@ def prune_checkpoints(root: Path, keep: int) -> None:
         shutil.rmtree(stale, ignore_errors=True)
 
 
-def build_dataset(config: dict, tokenizer, limit: int | None) -> tuple[list[EncodedExample], dict]:
+def build_dataset(
+    config: dict,
+    tokenizer,
+    limit: int | None,
+    *,
+    final: bool = False,
+) -> tuple[list[EncodedExample], dict]:
     dataset = config["dataset"]
     pool = load_adaptation_pool(
         dataset["id"],
@@ -229,20 +235,33 @@ def build_dataset(config: dict, tokenizer, limit: int | None) -> tuple[list[Enco
         dataset["adaptation_split"],
         revision=dataset.get("revision"),
     )
-    train, held_out = split_adaptation_pool(
+    pilot_train, pilot_val = split_adaptation_pool(
         pool, dataset["pilot_train_size"], dataset["pilot_validation_size"], dataset["seed"]
     )
+
+    if final:
+        # Full adaptation pool after recipe lock. Keep the pilot split IDs in the
+        # manifest for audit, but do not hold anything out of training.
+        train = sorted(pool, key=lambda question: question.qid)
+        mode = "final"
+    else:
+        train = pilot_train
+        mode = "pilot"
+
     if limit:
         train = train[:limit]
 
     variants = expand(train, dataset["max_variants_per_question"])
     manifest = split_manifest(
-        train,
-        held_out,
+        pilot_train,
+        pilot_val,
         dataset["seed"],
         dataset,
         dataset_revision=dataset.get("revision"),
     )
+    manifest["training_mode"] = mode
+    manifest["trained_question_ids"] = [question.qid for question in train]
+    manifest["trained_question_count"] = len(train)
     manifest["training_rows_after_augmentation"] = len(variants)
     return encode_variants(variants, tokenizer), manifest
 
@@ -250,8 +269,24 @@ def build_dataset(config: dict, tokenizer, limit: int | None) -> tuple[list[Enco
 def run(config: dict, args: argparse.Namespace) -> Path:
     validate_training_config(config)
 
+    if args.final and not args.recipe_lock:
+        raise SystemExit("--final requires --recipe-lock so the locked recipe cannot drift")
+
     rank, world_size, local_rank, device = setup_distributed(args.device)
     is_main = rank == 0
+
+    if args.recipe_lock:
+        from nebius_poc.recipe import apply_recipe_lock, load_recipe_lock
+
+        lock = load_recipe_lock(args.recipe_lock)
+        config = apply_recipe_lock(config, lock)
+        log.info(
+            "applied recipe lock from %s (objective=%s lr=%s rank=%s)",
+            args.recipe_lock,
+            config["objective"],
+            config["training"]["learning_rate"],
+            config["lora"]["rank"],
+        )
 
     # Fold the CLI overrides in before the manifest is written, so the manifest
     # describes the run that actually happened rather than the file on disk.
@@ -274,15 +309,25 @@ def run(config: dict, args: argparse.Namespace) -> Path:
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
+    stage = f"train-{'final-' if args.final else ''}{objective}"
     run_dir, manifest = (
-        open_run(f"train-{objective}", args.results_root, config) if is_main else (None, None)
+        open_run(stage, args.results_root, config) if is_main else (None, None)
     )
 
     tokenizer = load_tokenizer(model_id, revision)
-    examples, split_info = build_dataset(config, tokenizer, args.limit)
+    examples, split_info = build_dataset(
+        config, tokenizer, args.limit or None, final=args.final
+    )
+    if args.recipe_lock and is_main:
+        split_info["recipe_lock"] = str(args.recipe_lock)
     if is_main:
         write_json(run_dir / "split_manifest.json", split_info)
-    log.info("rank %d: %d training rows", rank, len(examples))
+    log.info(
+        "rank %d: %d training rows (mode=%s)",
+        rank,
+        len(examples),
+        split_info.get("training_mode"),
+    )
 
     dtype = resolve_dtype(config["model"]["dtype"], device)
     model = build_model(model_id, revision, dtype, config["lora"]).to(device)
@@ -433,11 +478,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-steps", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=0)
     parser.add_argument("--limit", type=int, default=0, help="cap the number of source questions")
+    parser.add_argument(
+        "--final",
+        action="store_true",
+        help="train on the full adaptation pool (requires --recipe-lock)",
+    )
+    parser.add_argument(
+        "--recipe-lock",
+        type=Path,
+        help="results/summary/recipe_lock.json from the pilot selection step",
+    )
     parser.add_argument("--resume-from", type=Path, help="a checkpoint-N directory to continue")
     parser.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # argparse gives 0 for unset ints; treat that as "no limit" for build_dataset.
+    if not args.limit:
+        args.limit = 0
     run(load_config(args.config), args)
     return 0
 

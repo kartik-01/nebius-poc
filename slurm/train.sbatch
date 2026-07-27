@@ -7,6 +7,10 @@
 #   sbatch --partition="$SLURM_PARTITION" ${SLURM_ACCOUNT:+--account=$SLURM_ACCOUNT} \
 #     ${SLURM_QOS:+--qos=$SLURM_QOS} slurm/train.sbatch
 #
+# After recipe lock:
+#   TRAIN_FINAL=1 RECIPE_LOCK=results/summary/recipe_lock.json \
+#     sbatch --partition="$SLURM_PARTITION" slurm/train.sbatch
+#
 #SBATCH --job-name=nebius-train
 #SBATCH --nodes=2
 #SBATCH --ntasks=2
@@ -33,9 +37,17 @@ fi
 : "${HF_HOME:?set HF_HOME in configs/cluster.env}"
 
 CONFIG="${TRAIN_CONFIG:-configs/train_sft.yaml}"
+# After recipe lock: TRAIN_FINAL=1 RECIPE_LOCK=results/summary/recipe_lock.json
+TRAIN_FINAL="${TRAIN_FINAL:-0}"
+RECIPE_LOCK="${RECIPE_LOCK:-}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_train_job${SLURM_JOB_ID}"
 OUT="${SHARED_ROOT}/results/raw/${RUN_ID}"
 mkdir -p "${OUT}"
+
+if [[ "${TRAIN_FINAL}" == "1" && -z "${RECIPE_LOCK}" ]]; then
+  echo "TRAIN_FINAL=1 requires RECIPE_LOCK=path/to/recipe_lock.json" >&2
+  exit 2
+fi
 
 MASTER_ADDR="$(scontrol show hostnames "${SLURM_JOB_NODELIST}" | head -n 1)"
 MASTER_PORT="$((20000 + SLURM_JOB_ID % 20000))"
@@ -53,6 +65,9 @@ fi
 if [[ -n "${CONTAINER_MOUNTS:-}" ]]; then
   MOUNTS+=("${CONTAINER_MOUNTS}")
 fi
+if [[ -n "${RECIPE_LOCK}" && "${RECIPE_LOCK}" != /* ]]; then
+  RECIPE_LOCK="/workspace/${RECIPE_LOCK}"
+fi
 MOUNT_CSV="$(IFS=,; echo "${MOUNTS[*]}")"
 
 MONITOR_PID=""
@@ -68,7 +83,16 @@ if [[ -x "${ROOT}/scripts/monitor_gpus.sh" ]]; then
   MONITOR_PID=$!
 fi
 
-echo "run_id=${RUN_ID} config=${CONFIG} master=${MASTER_ADDR}:${MASTER_PORT}"
+FINAL_ARG=""
+LOCK_ARG=""
+if [[ "${TRAIN_FINAL}" == "1" ]]; then
+  FINAL_ARG="--final"
+fi
+if [[ -n "${RECIPE_LOCK}" ]]; then
+  LOCK_ARG="--recipe-lock ${RECIPE_LOCK}"
+fi
+
+echo "run_id=${RUN_ID} config=${CONFIG} final=${TRAIN_FINAL} master=${MASTER_ADDR}:${MASTER_PORT}"
 
 srun --nodes=2 --ntasks=2 --ntasks-per-node=1 --kill-on-bad-exit=1 \
   --container-image="${TRAIN_IMAGE}" \
@@ -85,7 +109,8 @@ srun --nodes=2 --ntasks=2 --ntasks-per-node=1 --kill-on-bad-exit=1 \
       --rdzv-endpoint=\"${MASTER_ADDR}:${MASTER_PORT}\" \
       -m nebius_poc.train \
       --config ${CONFIG} \
-      --results-root /results
+      --results-root /results \
+      ${FINAL_ARG} ${LOCK_ARG}
   "
 
 echo "training artifacts in ${OUT}"

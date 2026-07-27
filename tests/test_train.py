@@ -11,10 +11,12 @@ from nebius_poc.data import expand, load_adaptation_pool
 from nebius_poc.objectives import IGNORE_INDEX
 from nebius_poc.prompts import LABELS
 from nebius_poc.train import (
+    build_dataset,
     collate,
     cosine_schedule_with_warmup,
     encode_variants,
     load_checkpoint,
+    main,
     objective_loss,
     prune_checkpoints,
     resolve_dtype,
@@ -221,3 +223,55 @@ def test_question_fixture_stays_permutable():
     # variant assertions above would silently start testing a single row.
     question = question_from("Which remedy applies?", ["One", "Two", "Three", "Four"], answer=2)
     assert len(expand([question], 4)) == 4
+
+
+def _dataset_config():
+    return {
+        "dataset": {
+            "id": "cais/mmlu",
+            "config": "professional_law",
+            "adaptation_split": "validation",
+            "final_test_split": "test",
+            "pilot_train_size": 150,
+            "pilot_validation_size": 20,
+            "seed": 42,
+            "max_variants_per_question": 4,
+            "revision": None,
+        }
+    }
+
+
+def test_pilot_build_dataset_uses_the_150_split(adaptation_pool, monkeypatch):
+    monkeypatch.setattr(
+        "nebius_poc.train.load_adaptation_pool",
+        lambda *args, **kwargs: adaptation_pool,
+    )
+    examples, manifest = build_dataset(_dataset_config(), FakeTokenizer(), limit=None, final=False)
+
+    assert manifest["training_mode"] == "pilot"
+    assert manifest["trained_question_count"] == 150
+    assert set(manifest["trained_question_ids"]) == set(manifest["pilot_train_ids"])
+    assert len(examples) == manifest["training_rows_after_augmentation"]
+
+
+def test_final_build_dataset_trains_the_full_pool(adaptation_pool, monkeypatch):
+    monkeypatch.setattr(
+        "nebius_poc.train.load_adaptation_pool",
+        lambda *args, **kwargs: adaptation_pool,
+    )
+    examples, manifest = build_dataset(_dataset_config(), FakeTokenizer(), limit=None, final=True)
+
+    assert manifest["training_mode"] == "final"
+    assert manifest["trained_question_count"] == 170
+    assert set(manifest["trained_question_ids"]) == {question.qid for question in adaptation_pool}
+    # Pilot IDs stay in the manifest for audit even though nothing is held out of training.
+    assert len(manifest["pilot_train_ids"]) == 150
+    assert len(manifest["pilot_validation_ids"]) == 20
+    assert sorted(manifest["trained_question_ids"]) == manifest["trained_question_ids"]
+    assert len(examples) == manifest["training_rows_after_augmentation"]
+
+
+def test_final_cli_requires_a_recipe_lock():
+    config = Path(__file__).resolve().parents[1] / "configs" / "train_sft.yaml"
+    with pytest.raises(SystemExit, match="--final requires --recipe-lock"):
+        main(["--config", str(config), "--final"])

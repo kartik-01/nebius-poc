@@ -42,10 +42,11 @@ def prefetch_model(model_id: str, revision: str | None, hf_home: Path, dry_run: 
 
     from huggingface_hub import snapshot_download
 
+    # Rely on HF_HOME (set by main). Passing cache_dir=hf_home would land snapshots
+    # next to hub/ instead of inside it, and offline jobs would miss them.
     path = snapshot_download(
         repo_id=model_id,
         revision=resolved,
-        cache_dir=str(hf_home),
     )
     record["local_path"] = path
     record["status"] = "downloaded"
