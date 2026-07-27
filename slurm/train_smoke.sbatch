@@ -71,13 +71,19 @@ srun --ntasks=1 --gpus=1 --kill-on-bad-exit=1 \
   --container-mounts="${MOUNT_CSV}" \
   --container-workdir=/workspace \
   --export=ALL,HF_HOME=/hf,HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-0}",TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-0}" \
-  python -m nebius_poc.train \
-    --config configs/train_ranking.yaml \
-    --model "${SMOKE_MODEL}" \
-    --limit 8 \
-    --batch-size 2 \
-    --max-steps 4 \
-    --results-root /results
+  bash -lc '
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
+    python -m nebius_poc.train \
+      --config configs/train_ranking.yaml \
+      --model "'"${SMOKE_MODEL}"'" \
+      --limit 8 \
+      --batch-size 2 \
+      --max-steps 4 \
+      --results-root /results
+  '
 
 ADAPTER_HOST="$(find "${OUT}" -type d -name adapter | head -n 1 || true)"
 if [[ -z "${ADAPTER_HOST}" ]]; then
@@ -92,15 +98,21 @@ srun --ntasks=1 --gpus=1 --kill-on-bad-exit=1 \
   --container-mounts="${MOUNT_CSV}" \
   --container-workdir=/workspace \
   --export=ALL,HF_HOME=/hf,HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-0}",TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-0}" \
-  python -m nebius_poc.evaluate \
-    --config configs/train_ranking.yaml \
-    --model "${SMOKE_MODEL}" \
-    --adapter "${ADAPTER_CONTAINER}" \
-    --label smoke-tuned \
-    --split validation \
-    --limit 8 \
-    --batch-size 2 \
-    --mode forced_choice \
-    --results-root /results
+  bash -lc '
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
+    python -m nebius_poc.evaluate \
+      --config configs/train_ranking.yaml \
+      --model "'"${SMOKE_MODEL}"'" \
+      --adapter "'"${ADAPTER_CONTAINER}"'" \
+      --label smoke-tuned \
+      --split validation \
+      --limit 8 \
+      --batch-size 2 \
+      --mode forced_choice \
+      --results-root /results
+  '
 
 echo "train smoke complete: ${OUT}"

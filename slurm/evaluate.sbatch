@@ -79,18 +79,27 @@ fi
 
 echo "evaluate label=${LABEL} split=${SPLIT} mode=${MODE} config=${CONFIG}"
 
+# Rebuild EXTRA as a string safe to embed in bash -lc.
+EXTRA_STR="${EXTRA[*]}"
+
 srun --ntasks=1 --gpus=1 --kill-on-bad-exit=1 \
   --container-image="${TRAIN_IMAGE}" \
   --container-mounts="${MOUNT_CSV}" \
   --container-workdir=/workspace \
   --export=ALL,HF_HOME=/hf,HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}",TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}" \
-  python -m nebius_poc.evaluate \
-    --config "${CONFIG}" \
-    --label "${LABEL}" \
-    --split "${SPLIT}" \
-    --mode "${MODE}" \
-    --results-root /results \
-    "${EXTRA[@]}"
+  bash -lc "
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
+    python -m nebius_poc.evaluate \
+      --config ${CONFIG} \
+      --label ${LABEL} \
+      --split ${SPLIT} \
+      --mode ${MODE} \
+      --results-root /results \
+      ${EXTRA_STR}
+  "
 
 echo "evaluation artifacts in ${OUT}"
 cat "${OUT}"/*/summary.json 2>/dev/null || cat "${OUT}/summary.json" 2>/dev/null || true

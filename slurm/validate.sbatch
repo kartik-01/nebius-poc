@@ -44,23 +44,35 @@ echo "out=${OUT}"
 echo "nodes=${SLURM_NODELIST}"
 echo "image=${VALIDATOR_IMAGE}"
 
-MOUNTS="${CONTAINER_MOUNTS:-}"
-MOUNT_ARGS=()
-if [[ -n "${MOUNTS}" ]]; then
-  MOUNT_ARGS+=(--container-mounts="${MOUNTS}")
+GPU_SMOKE_HOST="${ROOT}/containers/images/gpu_smoke"
+SMOKE_ARGS=()
+MOUNTS=("${ROOT}:/workspace" "${OUT}:/results")
+if [[ -x "${GPU_SMOKE_HOST}" ]]; then
+  MOUNTS+=("${GPU_SMOKE_HOST}:/usr/local/bin/gpu_smoke")
+  SMOKE_ARGS=(--gpu-smoke /usr/local/bin/gpu_smoke)
 fi
-# Always mount the run directory so each node writes into the same place.
-MOUNT_ARGS+=(--container-mounts="${OUT}:/results")
+if [[ -n "${CONTAINER_MOUNTS:-}" ]]; then
+  MOUNTS+=("${CONTAINER_MOUNTS}")
+fi
+MOUNT_CSV="$(IFS=,; echo "${MOUNTS[*]}")"
+MOUNT_ARGS=(--container-mounts="${MOUNT_CSV}")
 
 # --- Portable checks: one container invocation per allocated node ---
 srun --ntasks="${SLURM_NNODES}" --ntasks-per-node=1 \
   --container-image="${VALIDATOR_IMAGE}" \
   "${MOUNT_ARGS[@]}" \
-  --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE \
-  python3 -m validator.cluster_validate \
-    --config /opt/validator/configs/validator.yaml \
-    --out /results \
-    --gpu-smoke /usr/local/bin/gpu_smoke
+  --container-workdir=/workspace \
+  --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE,PYTHONPATH=/workspace \
+  bash -lc '
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
+    python3 -m validator.cluster_validate \
+      --config /workspace/configs/validator.yaml \
+      --out /results \
+      '"${SMOKE_ARGS[*]}"'
+  '
 
 # --- Provider-native NCCL: discover binaries at runtime, never bake paths in ---
 ALL_REDUCE="$(command -v all_reduce_perf || true)"
@@ -94,12 +106,19 @@ fi
 srun --nodes=1 --ntasks=1 --gpus=0 \
   --container-image="${VALIDATOR_IMAGE}" \
   "${MOUNT_ARGS[@]}" \
-  --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE \
-  python3 -m validator.cluster_validate \
-    --config /opt/validator/configs/validator.yaml \
-    --out /results \
-    --nccl-dir /results \
-    --aggregate-only
+  --container-workdir=/workspace \
+  --export=ALL,LOCAL_SCRATCH,VALIDATOR_IMAGE,PYTHONPATH=/workspace \
+  bash -lc '
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
+    python3 -m validator.cluster_validate \
+      --config /workspace/configs/validator.yaml \
+      --out /results \
+      --nccl-dir /results \
+      --aggregate-only
+  '
 
 echo "validation artifacts in ${OUT}"
 echo "summary:"

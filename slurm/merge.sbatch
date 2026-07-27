@@ -65,11 +65,17 @@ srun --ntasks=1 --gpus=1 --kill-on-bad-exit=1 \
   --container-mounts="${MOUNT_CSV}" \
   --container-workdir=/workspace \
   --export=ALL,HF_HOME=/hf,HF_HUB_OFFLINE="${HF_HUB_OFFLINE:-1}",TRANSFORMERS_OFFLINE="${TRANSFORMERS_OFFLINE:-1}" \
-  python -m nebius_poc.merge_adapter \
-    --config "${CONFIG}" \
-    --adapter "${ADAPTER_ARG}" \
-    --output "${MERGE_OUT}" \
-    --results-root /results
+  bash -lc "
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
+    python -m nebius_poc.merge_adapter \
+      --config ${CONFIG} \
+      --adapter ${ADAPTER_ARG} \
+      --output ${MERGE_OUT} \
+      --results-root /results
+  "
 
 echo "merged model at ${MERGE_OUT}"
 echo "merge run artifacts in ${OUT}"

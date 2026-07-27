@@ -100,6 +100,10 @@ srun --nodes=2 --ntasks=2 --ntasks-per-node=1 --kill-on-bad-exit=1 \
   --container-workdir=/workspace \
   --export=ALL,HF_HOME=/hf,HF_HUB_OFFLINE=1,TRANSFORMERS_OFFLINE=1,MASTER_ADDR,MASTER_PORT,NCCL_SOCKET_IFNAME,NCCL_IB_HCA,UCX_NET_DEVICES \
   bash -lc "
+    set -euo pipefail
+    # shellcheck disable=SC1091
+    source /workspace/scripts/container_python_setup.sh
+    nebius_poc_container_python_setup
     torchrun \
       --nnodes=\"\${SLURM_NNODES}\" \
       --nproc-per-node=${GPUS_PER_NODE} \

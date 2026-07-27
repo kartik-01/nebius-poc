@@ -2,7 +2,8 @@ objective: completion_sft
 
 model:
   id: Qwen/Qwen2.5-7B-Instruct
-  revision: null
+  # Pinned from results/raw/20260727T050625Z_prefetch_joblocal/asset_manifest.json
+  revision: a09a35458c702b33eeacc393d103063234e8bc28
   dtype: bfloat16
 
 dataset:
@@ -10,6 +11,7 @@ dataset:
   config: professional_law
   adaptation_split: validation
   final_test_split: test
+  revision: c30699e8356da336a370243923dbaf21066bb9fe
   pilot_train_size: 150
   pilot_validation_size: 20
   seed: 42
