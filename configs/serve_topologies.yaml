@@ -1,0 +1,38 @@
+# Serving topologies for the inference PoC.
+# Submit serve.sbatch with matching Slurm resources; the script refuses mismatches.
+
+topologies:
+  P0:
+    description: One TP=1 replica (baseline)
+    nodes: 1
+    gpus_per_node: 1
+    replicas_per_node: 1
+    tensor_parallel_size: 1
+  P1:
+    description: One TP=2 replica (tensor-parallel comparison)
+    nodes: 1
+    gpus_per_node: 2
+    replicas_per_node: 1
+    tensor_parallel_size: 2
+  P2:
+    description: Two TP=1 replicas on one node (controlled compare with P1)
+    nodes: 1
+    gpus_per_node: 2
+    replicas_per_node: 2
+    tensor_parallel_size: 1
+  P3:
+    description: Four TP=1 replicas across two nodes (aggregate PoC throughput)
+    nodes: 2
+    gpus_per_node: 2
+    replicas_per_node: 2
+    tensor_parallel_size: 1
+
+# Shared vLLM server knobs. Keep the search small on purpose.
+server:
+  host: 0.0.0.0
+  base_port: 8000
+  dtype: bfloat16
+  max_model_len: 2048
+  gpu_memory_utilization: 0.90
+  max_num_seqs: 256
+  max_num_batched_tokens: 8192

@@ -32,6 +32,7 @@ REQUIRED_KEYS = {
         "warmup_requests",
         "guardrails",
     },
+    "serve_topologies.yaml": {"topologies", "server"},
 }
 
 
