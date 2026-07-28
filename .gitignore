@@ -2,7 +2,10 @@
 .env
 .env.*
 !.env.example
-configs/cluster.env
+# Glob, not an exact match: backups and variants carry the same
+# cluster-specific paths and must not be committed either.
+configs/cluster.env*
+!configs/cluster.env.example
 
 # Local tool state
 .cursor/

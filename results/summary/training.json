@@ -1,23 +1,23 @@
 {
-  "run_id": "20260727T214242Z_train-final-candidate_ranking_job127",
+  "run_id": "20260728T071614Z_train-final-candidate_ranking_job182",
   "stage": "train-final-candidate_ranking",
-  "started_utc": "2026-07-27T21:42:42.704108+00:00",
-  "ended_utc": "2026-07-27T21:44:39.796865+00:00",
+  "started_utc": "2026-07-28T07:16:14.346135+00:00",
+  "ended_utc": "2026-07-28T07:26:05.726461+00:00",
   "exit_status": "ok",
   "objective": "candidate_ranking",
   "model": {
-    "id": "Qwen/Qwen2.5-7B-Instruct",
-    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "id": "Qwen/Qwen2.5-7B",
+    "revision": "d149729398750b98c0af14eb82c78cfe92750796",
     "dtype": "bfloat16"
   },
   "dataset": {
     "id": "cais/mmlu",
     "config": "professional_law",
     "adaptation_split": "validation",
-    "final_test_split": "test",
+    "trainable_split": "test",
+    "holdout_fraction": 0.3,
     "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
-    "pilot_train_size": 150,
-    "pilot_validation_size": 20,
+    "pilot_validation_size": 100,
     "seed": 42,
     "max_variants_per_question": 4
   },
@@ -52,7 +52,7 @@
     "world_size": 4,
     "nodes": "2",
     "nodelist": "worker-[0-1]",
-    "slurm_job_id": "127",
+    "slurm_job_id": "182",
     "gpus_visible_to_rank0": [
       {
         "index": 0,
@@ -76,23 +76,23 @@
     }
   },
   "throughput": {
-    "steps": 42,
-    "steps_excluding_first": 41,
-    "median_step_seconds": 1.6470185020007193,
-    "median_samples_per_second": 19.429047069676468,
-    "peak_gpu_bytes_rank0": 96902629376,
-    "peak_gpu_gib_rank0": 90.25,
+    "steps": 310,
+    "steps_excluding_first": 309,
+    "median_step_seconds": 1.6172421909868717,
+    "median_samples_per_second": 19.78677045302225,
+    "peak_gpu_bytes_rank0": 95781979136,
+    "peak_gpu_gib_rank0": 89.2,
     "world_size": 4
   },
   "loss": {
-    "first_loss": 1.430509428246296e-06,
-    "final_loss": 1.0375899076461792,
-    "median_loss": 1.1481406688690186,
+    "first_loss": 1.4919891357421875,
+    "final_loss": 0.04781492054462433,
+    "median_loss": 0.6132499575614929,
     "nan_or_inf_count": 0
   },
   "artifacts": {
-    "run_dir": "results/raw/20260727T214211Z_train_job127/20260727T214242Z_train-final-candidate_ranking_job127",
-    "adapter": "results/raw/20260727T214211Z_train_job127/20260727T214242Z_train-final-candidate_ranking_job127/adapter",
-    "metrics": "results/raw/20260727T214211Z_train_job127/20260727T214242Z_train-final-candidate_ranking_job127/metrics.jsonl"
+    "run_dir": "results/raw/20260728T071543Z_train_job182/20260728T071614Z_train-final-candidate_ranking_job182",
+    "adapter": "results/raw/20260728T071543Z_train_job182/20260728T071614Z_train-final-candidate_ranking_job182/adapter",
+    "metrics": "results/raw/20260728T071543Z_train_job182/20260728T071614Z_train-final-candidate_ranking_job182/metrics.jsonl"
   }
 }

@@ -456,10 +456,10 @@ def run_fio(scratch: str | None, size_gib: int, enabled_shared: bool, out_path: 
             "libaio",
             "--output-format",
             "json",
+            # --runtime caps the job. --time_based is a boolean flag, so passing it
+            # a value makes fio read the value as a job file name and fail.
             "--runtime",
             "30",
-            "--time_based",
-            "0",
         ]
         try:
             result = _run(command, timeout=300)
