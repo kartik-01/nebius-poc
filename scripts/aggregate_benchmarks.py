@@ -231,19 +231,49 @@ def aggregate_point(
         summary = summarize_requests(all_rows, gpu_count=gpu_count, wall_seconds=wall)
         summary["detailed_records"] = True
     elif summary_only:
-        # Last resort: sum throughputs across replicas (not ideal for percentiles).
-        output_tok_s = sum(
-            item["output_tokens_per_s"] or 0.0 for item in summary_only
-        )
-        summary = dict(summary_only[0])
-        summary["output_tokens_per_s"] = output_tok_s
-        summary["output_tokens_per_s_per_gpu"] = (
-            output_tok_s / gpu_count if gpu_count else None
-        )
-        summary["detailed_records"] = False
-        summary["warnings"] = [
-            "aggregated from summary metrics only; fleet p95 not recomputed from raw requests"
-        ]
+        def _sum(field: str) -> float:
+            return sum(item.get(field) or 0.0 for item in summary_only)
+
+        def _worst(group: str, stat: str) -> float | None:
+            values = [
+                (item.get(group) or {}).get(stat)
+                for item in summary_only
+                if (item.get(group) or {}).get(stat) is not None
+            ]
+            return max(values) if values else None
+
+        output_tok_s = _sum("output_tokens_per_s")
+        requests = _sum("requests")
+        errors = _sum("errors")
+        summary = {
+            "requests": int(requests),
+            "errors": int(errors),
+            "error_rate": (errors / requests) if requests else 0.0,
+            "output_tokens": _sum("output_tokens") or None,
+            "wall_seconds": max(
+                (item.get("wall_seconds") or 0.0 for item in summary_only), default=None
+            )
+            or None,
+            "output_tokens_per_s": output_tok_s,
+            "output_tokens_per_s_per_gpu": (
+                output_tok_s / gpu_count if gpu_count else None
+            ),
+            "ttft_ms": {stat: _worst("ttft_ms", stat) for stat in ("p50", "p95", "p99")},
+            "tpot_ms": {stat: _worst("tpot_ms", stat) for stat in ("p50", "p95", "p99")},
+            "e2e_ms": {stat: _worst("e2e_ms", stat) for stat in ("p50", "p95")},
+            "detailed_records": False,
+            "replicas": len(summary_only),
+        }
+        if len(summary_only) > 1:
+            summary["warnings"] = [
+                "no per-request records from this vLLM build; counts and throughput are "
+                "summed exactly, percentiles are the worst replica rather than a true "
+                "fleet percentile"
+            ]
+        else:
+            summary["warnings"] = [
+                "aggregated from summary metrics only; single replica so percentiles are exact"
+            ]
     else:
         summary = {
             "requests": 0,
