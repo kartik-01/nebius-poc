@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from nebius_poc.data import expand, load_adaptation_pool, load_config, split_adaptation_pool
-from nebius_poc.prompts import LABELS, build_messages, profile_sequence_lengths
+from nebius_poc.prompts import candidate_completion, profile_sequence_lengths, render_prompt
 from nebius_poc.report import write_json
 
 log = logging.getLogger(__name__)
@@ -31,14 +31,10 @@ def recommend_max_length(profile: dict, limits: Sequence[int] = (1024, 2048)) ->
 def rendered_texts(variants, tokenizer) -> list[str]:
     texts = []
     for variant in variants:
-        prompt = tokenizer.apply_chat_template(
-            build_messages(variant.question, variant.choices),
-            tokenize=False,
-            add_generation_prompt=True,
-        )
-        # Include the gold letter so the profile matches the SFT sequence, not just
-        # the prompt prefix.
-        texts.append(prompt + LABELS[variant.answer])
+        prompt = render_prompt(variant.subject, variant.question, variant.choices)
+        # Include the gold candidate so the profile matches the SFT sequence, not
+        # just the prompt prefix.
+        texts.append(prompt + candidate_completion(variant.answer))
     return texts
 
 

@@ -9,7 +9,7 @@ from fakes import FakeTokenizer, TinyCausalLM
 from helpers import question_from
 from nebius_poc.data import expand, load_adaptation_pool
 from nebius_poc.objectives import IGNORE_INDEX
-from nebius_poc.prompts import LABELS
+from nebius_poc.prompts import CANDIDATE_STRINGS, LABELS
 from nebius_poc.train import (
     build_dataset,
     collate,
@@ -73,7 +73,7 @@ def test_sft_collate_keeps_only_the_gold_continuation(encoded):
     tokenizer = FakeTokenizer()
     for row, example in enumerate(batch.labels.tolist()):
         scored = [token for token in example if token != IGNORE_INDEX]
-        expected = tokenizer(LABELS[encoded[row].gold])["input_ids"]
+        expected = tokenizer(CANDIDATE_STRINGS[encoded[row].gold])["input_ids"]
         assert scored == expected
 
     assert gold.tolist() == [example.gold for example in encoded]

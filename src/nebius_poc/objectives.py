@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import torch
 from torch.nn import functional as F
 
-from nebius_poc.prompts import LABELS, build_messages
+from nebius_poc.prompts import CANDIDATE_STRINGS, LABELS, render_prompt
 
 IGNORE_INDEX = -100
 
@@ -38,17 +38,20 @@ class ScoringBatch:
 
 
 def encode_candidates(
-    tokenizer, question: str, choices: Sequence[str], labels: Sequence[str] = LABELS
+    tokenizer,
+    subject: str,
+    question: str,
+    choices: Sequence[str],
+    labels: Sequence[str] = CANDIDATE_STRINGS,
 ) -> tuple[list[int], list[list[int]]]:
     """Tokenize one question into a prompt prefix and the candidate continuations.
 
-    `add_generation_prompt=True` produces the assistant turn opener, so the candidate
-    tokens attach exactly where the model would start generating. Evaluation and
-    training both come through here so that boundary is identical in both paths.
+    The prompt stops at "Answer:" and each candidate carries its own leading space,
+    so the candidate tokens attach exactly where the model would start generating.
+    Evaluation and training both come through here so that boundary is identical in
+    both paths.
     """
-    prompt_text = tokenizer.apply_chat_template(
-        build_messages(question, choices), tokenize=False, add_generation_prompt=True
-    )
+    prompt_text = render_prompt(subject, question, choices)
     prompt_ids = tokenizer(prompt_text, add_special_tokens=False)["input_ids"]
     candidate_ids = [
         tokenizer(label, add_special_tokens=False)["input_ids"] for label in labels

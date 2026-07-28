@@ -197,27 +197,36 @@ def test_gold_completion_batch_rejects_a_length_mismatch():
 
 def test_encode_candidates_shares_one_prompt_across_choices():
     tokenizer = FakeTokenizer()
-    prompt_ids, candidates = encode_candidates(tokenizer, "What is the remedy?", CHOICES)
+    prompt_ids, candidates = encode_candidates(
+        tokenizer, "professional_law", "What is the remedy?", CHOICES
+    )
 
     assert len(candidates) == 4
-    assert all(len(ids) == 1 for ids in candidates)
+    # " A" is two characters, and the fake tokenizer is one token per character.
+    assert all(len(ids) == 2 for ids in candidates)
     assert len({tuple(ids) for ids in candidates}) == 4
     assert len(prompt_ids) > 0
 
 
-def test_encode_candidates_ends_at_the_generation_boundary():
+def test_encode_candidates_ends_at_the_completion_boundary():
     tokenizer = FakeTokenizer()
-    prompt_ids, _ = encode_candidates(tokenizer, "What is the remedy?", CHOICES)
-    opener = tokenizer("<assistant>")["input_ids"]
-    assert prompt_ids[-len(opener) :] == opener
+    prompt_ids, _ = encode_candidates(
+        tokenizer, "professional_law", "What is the remedy?", CHOICES
+    )
+    boundary = tokenizer("Answer:")["input_ids"]
+    assert prompt_ids[-len(boundary) :] == boundary
 
 
 def test_encode_candidates_handles_multi_token_labels():
     tokenizer = FakeTokenizer()
     _, candidates = encode_candidates(
-        tokenizer, "What is the remedy?", CHOICES, labels=["AA", "BB", "CC", "DD"]
+        tokenizer,
+        "professional_law",
+        "What is the remedy?",
+        CHOICES,
+        labels=[" AA", " BB", " CC", " DD"],
     )
-    assert all(len(ids) == 2 for ids in candidates)
+    assert all(len(ids) == 3 for ids in candidates)
 
 
 @pytest.mark.parametrize("name", ["train_sft.yaml", "train_ranking.yaml"])

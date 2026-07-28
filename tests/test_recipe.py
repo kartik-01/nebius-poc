@@ -87,7 +87,7 @@ def test_select_objective_rejects_mismatched_counts():
 def _training_config(objective="candidate_ranking"):
     return {
         "objective": objective,
-        "model": {"id": "Qwen/Qwen2.5-7B-Instruct", "revision": "abc", "dtype": "bfloat16"},
+        "model": {"id": "Qwen/Qwen2.5-7B", "revision": "abc", "dtype": "bfloat16"},
         "dataset": {
             "id": "cais/mmlu",
             "config": "professional_law",

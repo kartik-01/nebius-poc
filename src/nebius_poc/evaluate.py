@@ -19,7 +19,7 @@ import yaml
 
 from nebius_poc.data import Question, load_config, load_split
 from nebius_poc.objectives import build_scoring_batch, candidate_scores, encode_candidates
-from nebius_poc.prompts import LABELS, build_messages
+from nebius_poc.prompts import LABELS, render_prompt
 from nebius_poc.report import close_run, format_adherence, open_run, write_json, write_jsonl
 from nebius_poc.train import resolve_dtype, setup_distributed
 
@@ -53,7 +53,10 @@ def forced_choice(
     rows: list[dict] = []
     for start in range(0, len(questions), batch_size):
         chunk = questions[start : start + batch_size]
-        encoded = [encode_candidates(tokenizer, item.question, item.choices) for item in chunk]
+        encoded = [
+            encode_candidates(tokenizer, item.subject, item.question, item.choices)
+            for item in chunk
+        ]
         batch = build_scoring_batch(encoded, tokenizer.pad_token_id, max_length).to(device)
 
         output = model(input_ids=batch.input_ids, attention_mask=batch.attention_mask)
@@ -95,12 +98,7 @@ def generate_answers(
         for start in range(0, len(questions), batch_size):
             chunk = questions[start : start + batch_size]
             prompts = [
-                tokenizer.apply_chat_template(
-                    build_messages(item.question, item.choices),
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                for item in chunk
+                render_prompt(item.subject, item.question, item.choices) for item in chunk
             ]
             inputs = tokenizer(
                 prompts, return_tensors="pt", padding=True, add_special_tokens=False

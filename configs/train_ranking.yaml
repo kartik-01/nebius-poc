@@ -1,9 +1,9 @@
 objective: candidate_ranking
 
 model:
-  id: Qwen/Qwen2.5-7B-Instruct
-  # Pinned from results/raw/20260727T050625Z_prefetch_joblocal/asset_manifest.json
-  revision: a09a35458c702b33eeacc393d103063234e8bc28
+  id: Qwen/Qwen2.5-7B
+  # Pinned; the resolved sha is recorded in the prefetch asset_manifest.json.
+  revision: d149729398750b98c0af14eb82c78cfe92750796
   dtype: bfloat16
 
 dataset:

@@ -1,5 +1,5 @@
 #!/bin/bash
-# One-node, one-GPU training smoke against Qwen2.5-0.5B-Instruct.
+# One-node, one-GPU training smoke against Qwen2.5-0.5B.
 # Proves Pyxis + torch + LoRA wiring. Accuracy numbers from this job are meaningless.
 #
 # Usage:
@@ -31,7 +31,7 @@ fi
 : "${TRAIN_IMAGE:?set TRAIN_IMAGE in configs/cluster.env}"
 : "${HF_HOME:?set HF_HOME in configs/cluster.env}"
 
-SMOKE_MODEL="${SMOKE_MODEL:-Qwen/Qwen2.5-0.5B-Instruct}"
+SMOKE_MODEL="${SMOKE_MODEL:-Qwen/Qwen2.5-0.5B}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_train-smoke_job${SLURM_JOB_ID}"
 OUT="${SHARED_ROOT}/results/raw/${RUN_ID}"
 mkdir -p "${OUT}"

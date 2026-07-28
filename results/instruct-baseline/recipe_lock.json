@@ -1,0 +1,86 @@
+{
+  "locked_utc": "2026-07-27T21:12:13.627856+00:00",
+  "objective": "candidate_ranking",
+  "learning_rate": 2e-05,
+  "lora_rank": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "lora_target_modules": [
+    "q_proj",
+    "k_proj",
+    "v_proj",
+    "o_proj",
+    "gate_proj",
+    "up_proj",
+    "down_proj"
+  ],
+  "epochs": 2,
+  "max_length": 1024,
+  "per_device_batch_size": 2,
+  "gradient_accumulation_steps": 4,
+  "seed": 42,
+  "model": {
+    "id": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "dtype": "bfloat16"
+  },
+  "dataset": {
+    "id": "cais/mmlu",
+    "config": "professional_law",
+    "adaptation_split": "validation",
+    "final_test_split": "test",
+    "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+    "pilot_train_size": 150,
+    "pilot_validation_size": 20,
+    "seed": 42,
+    "max_variants_per_question": 4
+  },
+  "augmentation": {
+    "max_variants_per_question": 4,
+    "policy": "safe_choice_permutation"
+  },
+  "checkpoint_rule": {
+    "retention": 2,
+    "select": "final_adapter_after_locked_epochs"
+  },
+  "selection": {
+    "primary_metric": "mean_gold_choice_nll",
+    "secondary_metric": "forced_choice_accuracy",
+    "candidates": [
+      {
+        "label": "sft-e2-lr1e-4",
+        "n": 20,
+        "mean_gold_choice_nll": 2.160743721574545,
+        "forced_choice_accuracy": 0.4
+      },
+      {
+        "label": "rank-e2-lr2e-5",
+        "n": 20,
+        "mean_gold_choice_nll": 0.955799973756075,
+        "forced_choice_accuracy": 0.65
+      }
+    ],
+    "winner_label": "rank-e2-lr2e-5",
+    "winner_mean_gold_choice_nll": 0.955799973756075,
+    "winner_forced_choice_accuracy": 0.65
+  },
+  "sources": {
+    "winner_config": "configs/train_ranking.yaml",
+    "sft-e2-lr1e-4": {
+      "config": "configs/train_sft.yaml",
+      "forced_choice": "results/raw/20260727T210007Z_evaluate-pilot-sft-e2_job122/20260727T210032Z_evaluate-pilot-sft-e2_job122/forced_choice.jsonl",
+      "objective": "completion_sft"
+    },
+    "rank-e2-lr2e-5": {
+      "config": "configs/train_ranking.yaml",
+      "forced_choice": "results/raw/20260727T210933Z_evaluate-pilot-rank-e2-lr2e5_job126/20260727T210958Z_evaluate-pilot-rank-e2-lr2e5_job126/forced_choice.jsonl",
+      "objective": "candidate_ranking"
+    }
+  },
+  "notes": [
+    "Objective selected on mean gold-choice NLL over the fixed 20-example internal set, per PLAN.md 10.6.",
+    "lr 1e-4 (5 and 2 epochs) overfit: training loss reached 1e-6 while internal accuracy fell below base.",
+    "Ranking micro-batch is 2 with accumulation 4, matching the SFT effective batch of 8 questions per device.",
+    "Base reference on the same 20 questions: accuracy 0.60, mean gold NLL 4.1933."
+  ]
+}

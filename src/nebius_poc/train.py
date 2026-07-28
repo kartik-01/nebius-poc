@@ -98,7 +98,7 @@ def encode_variants(variants: Sequence[Variant], tokenizer) -> list[EncodedExamp
     encoded = []
     for variant in variants:
         prompt_ids, candidate_ids = encode_candidates(
-            tokenizer, variant.question, variant.choices
+            tokenizer, variant.subject, variant.question, variant.choices
         )
         encoded.append(
             EncodedExample(

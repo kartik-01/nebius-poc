@@ -6,8 +6,8 @@ BIN := $(VENV)/bin
 TORCH_INDEX ?= https://download.pytorch.org/whl/cpu
 
 # The smoke path is opt-in because it downloads weights. It uses the 0.5B sibling of
-# the real base model: same tokenizer and chat template, a fraction of the bytes.
-SMOKE_MODEL ?= Qwen/Qwen2.5-0.5B-Instruct
+# the real base model: same tokenizer and prompt format, a fraction of the bytes.
+SMOKE_MODEL ?= Qwen/Qwen2.5-0.5B
 SMOKE_ROOT ?= results/raw/smoke
 SMOKE_QUESTIONS ?= 8
 

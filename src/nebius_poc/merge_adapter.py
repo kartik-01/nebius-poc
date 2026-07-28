@@ -16,12 +16,13 @@ from pathlib import Path
 import torch
 
 from nebius_poc.data import load_config
-from nebius_poc.prompts import build_messages
+from nebius_poc.prompts import render_prompt
 from nebius_poc.report import close_run, directory_checksums, open_run, write_json
 from nebius_poc.train import DTYPES, load_tokenizer
 
 log = logging.getLogger(__name__)
 
+VERIFICATION_SUBJECT = "professional_law"
 VERIFICATION_QUESTION = "Which body of law governs the formation of contracts for goods?"
 VERIFICATION_CHOICES = (
     "The Uniform Commercial Code",
@@ -42,11 +43,7 @@ def merge(model_id: str, revision: str | None, adapter: Path, dtype: torch.dtype
 @torch.no_grad()
 def verify_generation(model, tokenizer, max_new_tokens: int = 16) -> str:
     """One greedy generation so a broken merge fails here and not in the vLLM job."""
-    prompt = tokenizer.apply_chat_template(
-        build_messages(VERIFICATION_QUESTION, VERIFICATION_CHOICES),
-        tokenize=False,
-        add_generation_prompt=True,
-    )
+    prompt = render_prompt(VERIFICATION_SUBJECT, VERIFICATION_QUESTION, VERIFICATION_CHOICES)
     inputs = tokenizer(prompt, return_tensors="pt", add_special_tokens=False).to(model.device)
     generated = model.generate(
         **inputs,

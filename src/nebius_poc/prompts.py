@@ -2,6 +2,12 @@
 
 Training and evaluation both import from here so the completion boundary can never
 drift between them.
+
+The prompt is the standard MMLU zero-shot completion format: a one-line subject
+header, the question, the four labelled options, and a bare `Answer:` line that the
+model continues. The base checkpoint has no chat template, and a plain completion
+prompt is also what the original MMLU evaluation and lm-evaluation-harness use, so
+the numbers here stay comparable to published figures.
 """
 
 from __future__ import annotations
@@ -11,30 +17,32 @@ from collections.abc import Callable, Sequence
 
 LABELS = ("A", "B", "C", "D")
 
-SYSTEM_MESSAGE = (
-    "You are answering a multiple-choice question. Select the single best answer.\n"
-    "Reply with only A, B, C, or D."
-)
+
+def format_subject(subject: str) -> str:
+    return " ".join(subject.replace("_", " ").split())
 
 
-def render_user_message(question: str, choices: Sequence[str]) -> str:
+def render_prompt(subject: str, question: str, choices: Sequence[str]) -> str:
     if len(choices) != len(LABELS):
         raise ValueError(f"expected {len(LABELS)} choices, got {len(choices)}")
-    rendered = "\n".join(
+    options = "\n".join(
         f"{label}. {text}" for label, text in zip(LABELS, choices, strict=True)
     )
-    return f"Question:\n{question}\n\nChoices:\n{rendered}\n\nAnswer:"
-
-
-def build_messages(question: str, choices: Sequence[str]) -> list[dict[str, str]]:
-    return [
-        {"role": "system", "content": SYSTEM_MESSAGE},
-        {"role": "user", "content": render_user_message(question, choices)},
-    ]
+    return (
+        f"The following is a multiple choice question about {format_subject(subject)}. "
+        "Answer with a single letter.\n\n"
+        f"{question}\n{options}\nAnswer:"
+    )
 
 
 def candidate_completion(answer_index: int) -> str:
-    return LABELS[answer_index]
+    return CANDIDATE_STRINGS[answer_index]
+
+
+# The prompt ends at "Answer:" with no trailing space, so the continuation carries
+# the space. Tokenizers treat " A" and "A" as different tokens, and training and
+# evaluation must agree on which one they score.
+CANDIDATE_STRINGS = tuple(f" {label}" for label in LABELS)
 
 
 def _percentile(sorted_values: Sequence[int], fraction: float) -> int:

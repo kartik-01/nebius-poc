@@ -87,45 +87,42 @@ def tokenizer_boundary_check(model_id: str, revision: str | None) -> dict:
     """
     from transformers import AutoTokenizer
 
-    from nebius_poc.prompts import LABELS, SYSTEM_MESSAGE, build_messages
+    from nebius_poc.prompts import CANDIDATE_STRINGS, render_prompt
 
     tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
-    messages = build_messages(
+    prompt = render_prompt(
+        "professional_law",
         "Which remedy applies?",
         ["Damages", "Rescission", "Specific performance", "Nothing"],
-    )
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
     )
     prompt_ids = tokenizer(prompt, add_special_tokens=False)["input_ids"]
 
     candidates = {}
-    for label in LABELS:
-        ids = tokenizer(label, add_special_tokens=False)["input_ids"]
+    for candidate in CANDIDATE_STRINGS:
+        ids = tokenizer(candidate, add_special_tokens=False)["input_ids"]
         tokens = tokenizer.convert_ids_to_tokens(ids)
-        candidates[label] = {"token_ids": ids, "tokens": tokens}
+        candidates[candidate] = {"token_ids": ids, "tokens": tokens}
 
-    # Leading whitespace: some templates insert a space or newline before the
-    # assistant content. Record what the template actually emitted at the end.
+    # The prompt ends at "Answer:" and the candidate carries the leading space.
+    # Record both sides so a later change to either cannot drift unnoticed.
     trailing = prompt[-20:]
     return {
         "model_id": model_id,
         "revision": revision,
-        "system_message": SYSTEM_MESSAGE,
         "prompt_preview_tail": trailing,
         "prompt_token_count": len(prompt_ids),
         "candidates": candidates,
         "notes": [
-            "candidate strings are the bare letters A/B/C/D with no leading space",
-            "prompt was built with add_generation_prompt=True",
+            "standard MMLU completion prompt; the base checkpoint has no chat template",
+            "candidate strings carry a leading space because the prompt ends at 'Answer:'",
         ],
     }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prefetch and pin HF assets")
-    parser.add_argument("--model", default="Qwen/Qwen2.5-7B-Instruct")
-    parser.add_argument("--smoke-model", default="Qwen/Qwen2.5-0.5B-Instruct")
+    parser.add_argument("--model", default="Qwen/Qwen2.5-7B")
+    parser.add_argument("--smoke-model", default="Qwen/Qwen2.5-0.5B")
     parser.add_argument("--dataset", default="cais/mmlu")
     parser.add_argument("--dataset-config", default="professional_law")
     parser.add_argument("--model-revision", default=None)
