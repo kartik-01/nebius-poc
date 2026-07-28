@@ -31,10 +31,16 @@ output_tokens = int(plan["output_tokens"])
 warmup = int(plan["warmup_requests"])
 num_replicas = len(base_urls)
 
-# Keep total request count comparable across topologies: each replica gets
-# floor(total / n) prompts so P2/P3 do not inflate fleet traffic.
-base_prompts = 256
-prompts_per_replica = max(base_prompts // num_replicas, warmup + 8)
+def prompts_for(conc: int) -> int:
+    """Requests per replica for one concurrency point.
+
+    Each replica gets floor(fleet / n) prompts so P2/P3 do not inflate fleet
+    traffic relative to P0. The fleet total scales with load because a fixed
+    count turns high-concurrency runs into a single wave that measures ramp-up
+    instead of steady state; eight batches per replica, floored at 256 total.
+    """
+    fleet = max(256, conc * 8)
+    return max(fleet // num_replicas, warmup + 8)
 
 # The benchmark CLI changes shape across vLLM releases: 0.8.5 has no --backend and
 # no --save-detailed, while newer builds have both. Probe once and only pass flags
@@ -57,6 +63,7 @@ for conc in concurrencies:
             result_dir = out / tag
             result_dir.mkdir(parents=True, exist_ok=True)
             seed = 10_000 + conc * 100 + rep * 10 + index
+            num_prompts = prompts_for(conc)
             # endpoints.json stores OpenAI-style base URLs ending in /v1, but the
             # bench client wants the server root and adds --endpoint itself.
             server_root = base_url[: -len("/v1")] if base_url.endswith("/v1") else base_url
@@ -68,7 +75,7 @@ for conc in concurrencies:
                 "--dataset-name", "random",
                 "--random-input-len", str(input_tokens),
                 "--random-output-len", str(output_tokens),
-                "--num-prompts", str(prompts_per_replica),
+                "--num-prompts", str(num_prompts),
                 "--max-concurrency", str(max(1, conc // num_replicas)),
                 "--seed", str(seed),
                 "--save-result",
@@ -90,7 +97,7 @@ for conc in concurrencies:
                 "repetition": rep,
                 "endpoint_index": index,
                 "base_url": base_url,
-                "num_prompts": prompts_per_replica,
+                "num_prompts": num_prompts,
                 "max_concurrency": max(1, conc // num_replicas),
                 "seed": seed,
                 "command": detailed_cmd,

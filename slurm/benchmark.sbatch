@@ -83,7 +83,9 @@ stage = sys.argv[4]
 
 conc = os.environ.get("CONCURRENCY")
 if conc:
-    concurrencies = [int(conc)]
+    # Accepts a single point or a comma-separated list, so a saturation sweep can
+    # be driven without editing the committed config.
+    concurrencies = [int(part) for part in conc.replace(" ", "").split(",") if part]
 elif stage == "soak":
     # Soak uses one operating point; caller should set CONCURRENCY near 80% goodput.
     concurrencies = [int(os.environ.get("SOAK_CONCURRENCY", cfg["concurrency"][-1]))]
