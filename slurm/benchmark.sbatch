@@ -109,6 +109,9 @@ manifest = {
     "output_tokens": cfg["output_tokens"],
     "warmup_requests": cfg["warmup_requests"],
     "soak_minutes": cfg.get("soak_minutes"),
+    # Fleet-wide request count for the soak. vllm bench only writes results when it
+    # finishes, so the run has to be sized to end on its own rather than be killed.
+    "soak_prompts": int(os.environ.get("SOAK_PROMPTS", "0")),
     "guardrails": cfg["guardrails"],
 }
 (out / "bench_plan.json").write_text(json.dumps(manifest, indent=2) + "\n")

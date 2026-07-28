@@ -1,0 +1,1074 @@
+{
+  "generated_utc": "2026-07-28T01:05:47.035816+00:00",
+  "objective": "output_token_goodput",
+  "guardrails": {
+    "p95_ttft_ms": 2000,
+    "p95_tpot_ms": 100,
+    "max_error_rate": 0.0
+  },
+  "topologies": [
+    {
+      "topology": "P0",
+      "gpu_count": 1,
+      "bench_root": "results/raw/20260728T003024Z_bench-screen_job162",
+      "best_passing": {
+        "stage": "screen",
+        "concurrency": 128,
+        "repetition": 1,
+        "output_token_goodput": 5712.285253142786,
+        "output_tokens_per_s_per_gpu": 5712.285253142786,
+        "ttft_p95_ms": 1149.7569638071582,
+        "tpot_p95_ms": 21.51329701539041
+      },
+      "final_medians": [],
+      "points": [
+        {
+          "stage": "screen",
+          "concurrency": 64,
+          "repetition": 1,
+          "topology": "P0",
+          "gpu_count": 1,
+          "shards": [
+            "results/raw/20260728T003024Z_bench-screen_job162/screen_c64_r1_e0/bench.json"
+          ],
+          "requests": 512,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 64812,
+          "wall_seconds": 13.813426059903577,
+          "output_tokens_per_s": 4691.9569206752185,
+          "output_tokens_per_s_per_gpu": 4691.9569206752185,
+          "ttft_ms": {
+            "p50": 362.71989966144247,
+            "p95": 644.5090388529934,
+            "p99": 789.2216670862399
+          },
+          "tpot_ms": {
+            "p50": 10.940677434103627,
+            "p95": 13.10391915415773,
+            "p99": 13.496823021848723
+          },
+          "e2e_ms": {
+            "p50": 1725.7138395216316,
+            "p95": 1912.9588844138198
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 4691.9569206752185
+        },
+        {
+          "stage": "screen",
+          "concurrency": 128,
+          "repetition": 1,
+          "topology": "P0",
+          "gpu_count": 1,
+          "shards": [
+            "results/raw/20260728T003024Z_bench-screen_job162/screen_c128_r1_e0/bench.json"
+          ],
+          "requests": 1024,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 128242,
+          "wall_seconds": 22.450209385016933,
+          "output_tokens_per_s": 5712.285253142786,
+          "output_tokens_per_s_per_gpu": 5712.285253142786,
+          "ttft_ms": {
+            "p50": 539.2625703102567,
+            "p95": 1149.7569638071582,
+            "p99": 1507.6128602353856
+          },
+          "tpot_ms": {
+            "p50": 19.68068513133739,
+            "p95": 21.51329701539041,
+            "p99": 99.89445712417314
+          },
+          "e2e_ms": {
+            "p50": 2797.2353500081226,
+            "p95": 3233.638027566485
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 5712.285253142786
+        },
+        {
+          "stage": "screen",
+          "concurrency": 256,
+          "repetition": 1,
+          "topology": "P0",
+          "gpu_count": 1,
+          "shards": [
+            "results/raw/20260728T003024Z_bench-screen_job162/screen_c256_r1_e0/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 257192,
+          "wall_seconds": 39.55066658509895,
+          "output_tokens_per_s": 6502.848680100356,
+          "output_tokens_per_s_per_gpu": 6502.848680100356,
+          "ttft_ms": {
+            "p50": 606.0446963249433,
+            "p95": 2133.492220507469,
+            "p99": 3155.02381335245
+          },
+          "tpot_ms": {
+            "p50": 36.23929732178571,
+            "p95": 38.470242052947675,
+            "p99": 185.17656602431074
+          },
+          "e2e_ms": {
+            "p50": 4916.427653515711,
+            "p95": 6564.293168846052
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": false,
+          "guardrail_failures": [
+            "p95_ttft_ms 2133.492220507469 exceeds 2000"
+          ],
+          "output_token_goodput": 0.0
+        }
+      ]
+    },
+    {
+      "topology": "P1",
+      "gpu_count": 2,
+      "bench_root": "results/raw/20260728T001800Z_bench-screen_job158",
+      "best_passing": {
+        "stage": "screen",
+        "concurrency": 256,
+        "repetition": 1,
+        "output_token_goodput": 9290.836689152959,
+        "output_tokens_per_s_per_gpu": 4645.418344576479,
+        "ttft_p95_ms": 1344.4531074143013,
+        "tpot_p95_ms": 26.269010379708806
+      },
+      "final_medians": [],
+      "points": [
+        {
+          "stage": "screen",
+          "concurrency": 64,
+          "repetition": 1,
+          "topology": "P1",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001800Z_bench-screen_job158/screen_c64_r1_e0/bench.json"
+          ],
+          "requests": 512,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 64987,
+          "wall_seconds": 9.932086505927145,
+          "output_tokens_per_s": 6543.136727737709,
+          "output_tokens_per_s_per_gpu": 3271.5683638688547,
+          "ttft_ms": {
+            "p50": 227.46576259305584,
+            "p95": 414.0563406166617,
+            "p99": 505.64451360842213
+          },
+          "tpot_ms": {
+            "p50": 7.958966341904416,
+            "p95": 9.516498574429727,
+            "p99": 9.623747921042789
+          },
+          "e2e_ms": {
+            "p50": 1242.170954006724,
+            "p95": 1313.7972187716514
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 6543.136727737709
+        },
+        {
+          "stage": "screen",
+          "concurrency": 128,
+          "repetition": 1,
+          "topology": "P1",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001800Z_bench-screen_job158/screen_c128_r1_e0/bench.json"
+          ],
+          "requests": 1024,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 128349,
+          "wall_seconds": 15.333669727900997,
+          "output_tokens_per_s": 8370.403320116997,
+          "output_tokens_per_s_per_gpu": 4185.201660058498,
+          "ttft_ms": {
+            "p50": 309.5974150417078,
+            "p95": 689.3468094291165,
+            "p99": 989.2026538285427
+          },
+          "tpot_ms": {
+            "p50": 13.711287706073282,
+            "p95": 14.856415661418533,
+            "p99": 81.63355318829262
+          },
+          "e2e_ms": {
+            "p50": 1935.1988505804911,
+            "p95": 2231.938510236796
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 8370.403320116997
+        },
+        {
+          "stage": "screen",
+          "concurrency": 256,
+          "repetition": 1,
+          "topology": "P1",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001800Z_bench-screen_job158/screen_c256_r1_e0/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 257600,
+          "wall_seconds": 27.726243461016566,
+          "output_tokens_per_s": 9290.836689152959,
+          "output_tokens_per_s_per_gpu": 4645.418344576479,
+          "ttft_ms": {
+            "p50": 431.2150804983048,
+            "p95": 1344.4531074143013,
+            "p99": 2186.986763833554
+          },
+          "tpot_ms": {
+            "p50": 24.91820454448869,
+            "p95": 26.269010379708806,
+            "p99": 80.76151059824
+          },
+          "e2e_ms": {
+            "p50": 3422.969048959203,
+            "p95": 4524.137842620257
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 9290.836689152959
+        },
+        {
+          "stage": "screen",
+          "concurrency": 512,
+          "repetition": 1,
+          "topology": "P1",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001800Z_bench-screen_job158/screen_c512_r1_e0/bench.json"
+          ],
+          "requests": 4096,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 514548,
+          "wall_seconds": 55.773161130957305,
+          "output_tokens_per_s": 9225.727743704962,
+          "output_tokens_per_s_per_gpu": 4612.863871852481,
+          "ttft_ms": {
+            "p50": 3505.465890476387,
+            "p95": 4465.598405804485,
+            "p99": 5679.654472041876
+          },
+          "tpot_ms": {
+            "p50": 27.08663355556751,
+            "p95": 29.29303777132799,
+            "p99": 91.03134167380497
+          },
+          "e2e_ms": {
+            "p50": 6826.809540507384,
+            "p95": 7666.764745023102
+          },
+          "detailed_records": false,
+          "replicas": 1,
+          "warnings": [
+            "aggregated from summary metrics only; single replica so percentiles are exact"
+          ],
+          "passes_guardrails": false,
+          "guardrail_failures": [
+            "p95_ttft_ms 4465.598405804485 exceeds 2000"
+          ],
+          "output_token_goodput": 0.0
+        }
+      ]
+    },
+    {
+      "topology": "P2",
+      "gpu_count": 2,
+      "bench_root": "results/raw/20260728T001152Z_bench-screen_job156",
+      "best_passing": {
+        "stage": "screen",
+        "concurrency": 256,
+        "repetition": 1,
+        "output_token_goodput": 11408.28694971744,
+        "output_tokens_per_s_per_gpu": 5704.14347485872,
+        "ttft_p95_ms": 1457.728205109015,
+        "tpot_p95_ms": 21.609050375006095
+      },
+      "final_medians": [],
+      "points": [
+        {
+          "stage": "screen",
+          "concurrency": 64,
+          "repetition": 1,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c64_r1_e0/bench.json",
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c64_r1_e1/bench.json"
+          ],
+          "requests": 512,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 64662,
+          "wall_seconds": 9.874035668093711,
+          "output_tokens_per_s": 6584.006429786261,
+          "output_tokens_per_s_per_gpu": 3292.0032148931305,
+          "ttft_ms": {
+            "p50": 265.74010225431266,
+            "p95": 401.1477988678962,
+            "p99": 412.3215386993252
+          },
+          "tpot_ms": {
+            "p50": 7.979565142158862,
+            "p95": 9.504326814088941,
+            "p99": 9.601078961873206
+          },
+          "e2e_ms": {
+            "p50": 1232.2701174998656,
+            "p95": 1261.0198984621093
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 6584.006429786261
+        },
+        {
+          "stage": "screen",
+          "concurrency": 128,
+          "repetition": 1,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c128_r1_e0/bench.json",
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c128_r1_e1/bench.json"
+          ],
+          "requests": 1024,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 128672,
+          "wall_seconds": 13.99892775900662,
+          "output_tokens_per_s": 9209.639716950362,
+          "output_tokens_per_s_per_gpu": 4604.819858475181,
+          "ttft_ms": {
+            "p50": 353.8887002550837,
+            "p95": 672.6575654931366,
+            "p99": 842.1944431960583
+          },
+          "tpot_ms": {
+            "p50": 12.595398358577825,
+            "p95": 13.504465056242289,
+            "p99": 49.30902774329202
+          },
+          "e2e_ms": {
+            "p50": 1746.999568073079,
+            "p95": 2067.563246539794
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 9209.639716950362
+        },
+        {
+          "stage": "screen",
+          "concurrency": 256,
+          "repetition": 1,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c256_r1_e0/bench.json",
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c256_r1_e1/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 257163,
+          "wall_seconds": 22.5681635690853,
+          "output_tokens_per_s": 11408.28694971744,
+          "output_tokens_per_s_per_gpu": 5704.14347485872,
+          "ttft_ms": {
+            "p50": 558.244861826779,
+            "p95": 1457.728205109015,
+            "p99": 1984.5190456882117
+          },
+          "tpot_ms": {
+            "p50": 19.870506814844585,
+            "p95": 21.609050375006095,
+            "p99": 140.09485508625457
+          },
+          "e2e_ms": {
+            "p50": 2809.3871055170894,
+            "p95": 3670.3867482370697
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 11408.28694971744
+        },
+        {
+          "stage": "screen",
+          "concurrency": 512,
+          "repetition": 1,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c512_r1_e0/bench.json",
+            "results/raw/20260728T001152Z_bench-screen_job156/screen_c512_r1_e1/bench.json"
+          ],
+          "requests": 4096,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 516075,
+          "wall_seconds": 40.05706164916046,
+          "output_tokens_per_s": 12969.818780830863,
+          "output_tokens_per_s_per_gpu": 6484.9093904154315,
+          "ttft_ms": {
+            "p50": 700.3139409675896,
+            "p95": 2263.756625948008,
+            "p99": 3190.7428568974137
+          },
+          "tpot_ms": {
+            "p50": 35.86596438627712,
+            "p95": 38.86300448903917,
+            "p99": 121.64504737476562
+          },
+          "e2e_ms": {
+            "p50": 5017.545820446685,
+            "p95": 6502.967996546042
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": false,
+          "guardrail_failures": [
+            "p95_ttft_ms 2263.756625948008 exceeds 2000"
+          ],
+          "output_token_goodput": 0.0
+        }
+      ]
+    },
+    {
+      "topology": "P3",
+      "gpu_count": 4,
+      "bench_root": "results/raw/20260728T002415Z_bench-screen_job160",
+      "best_passing": {
+        "stage": "screen",
+        "concurrency": 512,
+        "repetition": 1,
+        "output_token_goodput": 22822.363584460734,
+        "output_tokens_per_s_per_gpu": 5705.590896115184,
+        "ttft_p95_ms": 1526.3035060255788,
+        "tpot_p95_ms": 21.923826049598972
+      },
+      "final_medians": [],
+      "points": [
+        {
+          "stage": "screen",
+          "concurrency": 128,
+          "repetition": 1,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c128_r1_e0/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c128_r1_e1/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c128_r1_e2/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c128_r1_e3/bench.json"
+          ],
+          "requests": 1024,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 128708,
+          "wall_seconds": 9.78892001695931,
+          "output_tokens_per_s": 13156.323881722015,
+          "output_tokens_per_s_per_gpu": 3289.080970430504,
+          "ttft_ms": {
+            "p50": 235.97974689164403,
+            "p95": 374.1883287439123,
+            "p99": 400.4415301606059
+          },
+          "tpot_ms": {
+            "p50": 9.605024887341044,
+            "p95": 9.442312562266205,
+            "p99": 87.45835635112611
+          },
+          "e2e_ms": {
+            "p50": 1232.0501069771126,
+            "p95": 1255.4863942787051
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 13156.323881722015
+        },
+        {
+          "stage": "screen",
+          "concurrency": 256,
+          "repetition": 1,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c256_r1_e0/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c256_r1_e1/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c256_r1_e2/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c256_r1_e3/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 257741,
+          "wall_seconds": 14.105663553113118,
+          "output_tokens_per_s": 18378.029738706282,
+          "output_tokens_per_s_per_gpu": 4594.5074346765705,
+          "ttft_ms": {
+            "p50": 402.9749245187304,
+            "p95": 700.2609764575027,
+            "p99": 821.1180362850428
+          },
+          "tpot_ms": {
+            "p50": 12.185995015569768,
+            "p95": 13.614538358524442,
+            "p99": 51.088599249099346
+          },
+          "e2e_ms": {
+            "p50": 1775.3385256510228,
+            "p95": 1950.2871603472158
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 18378.029738706282
+        },
+        {
+          "stage": "screen",
+          "concurrency": 512,
+          "repetition": 1,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c512_r1_e0/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c512_r1_e1/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c512_r1_e2/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c512_r1_e3/bench.json"
+          ],
+          "requests": 4096,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 516514,
+          "wall_seconds": 22.724404146894813,
+          "output_tokens_per_s": 22822.363584460734,
+          "output_tokens_per_s_per_gpu": 5705.590896115184,
+          "ttft_ms": {
+            "p50": 624.4840089204899,
+            "p95": 1526.3035060255788,
+            "p99": 2043.5683123278432
+          },
+          "tpot_ms": {
+            "p50": 19.783232297800343,
+            "p95": 21.923826049598972,
+            "p99": 47.86074498268668
+          },
+          "e2e_ms": {
+            "p50": 2817.5270380452275,
+            "p95": 3786.0637289239094
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 22822.363584460734
+        },
+        {
+          "stage": "screen",
+          "concurrency": 1024,
+          "repetition": 1,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c1024_r1_e0/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c1024_r1_e1/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c1024_r1_e2/bench.json",
+            "results/raw/20260728T002415Z_bench-screen_job160/screen_c1024_r1_e3/bench.json"
+          ],
+          "requests": 8192,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 1028837,
+          "wall_seconds": 39.88178566796705,
+          "output_tokens_per_s": 25870.353720474497,
+          "output_tokens_per_s_per_gpu": 6467.588430118624,
+          "ttft_ms": {
+            "p50": 734.7535514667243,
+            "p95": 2256.459974311292,
+            "p99": 3251.898786195088
+          },
+          "tpot_ms": {
+            "p50": 36.08802049513522,
+            "p95": 39.12361026136571,
+            "p99": 185.85967222577875
+          },
+          "e2e_ms": {
+            "p50": 5071.080442983657,
+            "p95": 6523.749624262564
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": false,
+          "guardrail_failures": [
+            "p95_ttft_ms 2256.459974311292 exceeds 2000"
+          ],
+          "output_token_goodput": 0.0
+        }
+      ]
+    },
+    {
+      "topology": "P2",
+      "gpu_count": 2,
+      "bench_root": "results/raw/20260728T004335Z_bench-final_job164",
+      "best_passing": {
+        "stage": "final",
+        "concurrency": 256,
+        "repetition": 2,
+        "output_token_goodput": 11584.165168386855,
+        "output_tokens_per_s_per_gpu": 5792.0825841934275,
+        "ttft_p95_ms": 1188.2212782278657,
+        "tpot_p95_ms": 21.36978703829658
+      },
+      "final_medians": [
+        {
+          "concurrency": 256,
+          "repetitions": 3,
+          "median_goodput": 11407.688560587878,
+          "min_goodput": 11377.401431859938,
+          "max_goodput": 11584.165168386855,
+          "all_pass": true
+        }
+      ],
+      "points": [
+        {
+          "stage": "final",
+          "concurrency": 256,
+          "repetition": 1,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T004335Z_bench-final_job164/final_c256_r1_e0/bench.json",
+            "results/raw/20260728T004335Z_bench-final_job164/final_c256_r1_e1/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 257163,
+          "wall_seconds": 22.716326561989263,
+          "output_tokens_per_s": 11377.401431859938,
+          "output_tokens_per_s_per_gpu": 5688.700715929969,
+          "ttft_ms": {
+            "p50": 516.0263577442947,
+            "p95": 1217.1457032905892,
+            "p99": 1710.833151503466
+          },
+          "tpot_ms": {
+            "p50": 20.115483308766812,
+            "p95": 22.046044236324054,
+            "p99": 112.02941204731606
+          },
+          "e2e_ms": {
+            "p50": 2838.58244959265,
+            "p95": 3456.866313214414
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 11377.401431859938
+        },
+        {
+          "stage": "final",
+          "concurrency": 256,
+          "repetition": 2,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T004335Z_bench-final_job164/final_c256_r2_e0/bench.json",
+            "results/raw/20260728T004335Z_bench-final_job164/final_c256_r2_e1/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 256268,
+          "wall_seconds": 22.138810605974868,
+          "output_tokens_per_s": 11584.165168386855,
+          "output_tokens_per_s_per_gpu": 5792.0825841934275,
+          "ttft_ms": {
+            "p50": 527.8246086095351,
+            "p95": 1188.2212782278657,
+            "p99": 1634.1777278576046
+          },
+          "tpot_ms": {
+            "p50": 20.541844678279233,
+            "p95": 21.36978703829658,
+            "p99": 184.59832285763704
+          },
+          "e2e_ms": {
+            "p50": 2781.4195420360193,
+            "p95": 3306.918509840034
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 11584.165168386855
+        },
+        {
+          "stage": "final",
+          "concurrency": 256,
+          "repetition": 3,
+          "topology": "P2",
+          "gpu_count": 2,
+          "shards": [
+            "results/raw/20260728T004335Z_bench-final_job164/final_c256_r3_e0/bench.json",
+            "results/raw/20260728T004335Z_bench-final_job164/final_c256_r3_e1/bench.json"
+          ],
+          "requests": 2048,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 256766,
+          "wall_seconds": 22.5195619170554,
+          "output_tokens_per_s": 11407.688560587878,
+          "output_tokens_per_s_per_gpu": 5703.844280293939,
+          "ttft_ms": {
+            "p50": 592.2610800091661,
+            "p95": 1147.3804108216427,
+            "p99": 1664.4570932164788
+          },
+          "tpot_ms": {
+            "p50": 20.109296092754146,
+            "p95": 21.918460999901487,
+            "p99": 184.1726430691778
+          },
+          "e2e_ms": {
+            "p50": 2806.128705618903,
+            "p95": 3478.1025631236844
+          },
+          "detailed_records": false,
+          "replicas": 2,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 11407.688560587878
+        }
+      ]
+    },
+    {
+      "topology": "P3",
+      "gpu_count": 4,
+      "bench_root": "results/raw/20260728T004912Z_bench-final_job166",
+      "best_passing": {
+        "stage": "final",
+        "concurrency": 512,
+        "repetition": 2,
+        "output_token_goodput": 23097.85520232454,
+        "output_tokens_per_s_per_gpu": 5774.463800581135,
+        "ttft_p95_ms": 1195.3430288471282,
+        "tpot_p95_ms": 21.713422452315953
+      },
+      "final_medians": [
+        {
+          "concurrency": 512,
+          "repetitions": 3,
+          "median_goodput": 22832.229394912378,
+          "min_goodput": 22797.331024923784,
+          "max_goodput": 23097.85520232454,
+          "all_pass": true
+        }
+      ],
+      "points": [
+        {
+          "stage": "final",
+          "concurrency": 512,
+          "repetition": 1,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r1_e0/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r1_e1/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r1_e2/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r1_e3/bench.json"
+          ],
+          "requests": 4096,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 516514,
+          "wall_seconds": 22.714451640844345,
+          "output_tokens_per_s": 22832.229394912378,
+          "output_tokens_per_s_per_gpu": 5708.057348728094,
+          "ttft_ms": {
+            "p50": 569.6843219909624,
+            "p95": 1195.8339823409913,
+            "p99": 1680.5155063304119
+          },
+          "tpot_ms": {
+            "p50": 20.06693526147739,
+            "p95": 22.34181423220549,
+            "p99": 47.901228560418915
+          },
+          "e2e_ms": {
+            "p50": 2821.9841035315767,
+            "p95": 3323.8125302130356
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 22832.229394912378
+        },
+        {
+          "stage": "final",
+          "concurrency": 512,
+          "repetition": 2,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r2_e0/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r2_e1/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r2_e2/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r2_e3/bench.json"
+          ],
+          "requests": 4096,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 515295,
+          "wall_seconds": 22.369792294921353,
+          "output_tokens_per_s": 23097.85520232454,
+          "output_tokens_per_s_per_gpu": 5774.463800581135,
+          "ttft_ms": {
+            "p50": 597.4543771590106,
+            "p95": 1195.3430288471282,
+            "p99": 1664.609850870911
+          },
+          "tpot_ms": {
+            "p50": 19.41539891693124,
+            "p95": 21.713422452315953,
+            "p99": 57.390000318116684
+          },
+          "e2e_ms": {
+            "p50": 2811.0103955259547,
+            "p95": 3358.949463744648
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 23097.85520232454
+        },
+        {
+          "stage": "final",
+          "concurrency": 512,
+          "repetition": 3,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r3_e0/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r3_e1/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r3_e2/bench.json",
+            "results/raw/20260728T004912Z_bench-final_job166/final_c512_r3_e3/bench.json"
+          ],
+          "requests": 4096,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 515118,
+          "wall_seconds": 22.66890912503004,
+          "output_tokens_per_s": 22797.331024923784,
+          "output_tokens_per_s_per_gpu": 5699.332756230946,
+          "ttft_ms": {
+            "p50": 662.2310560946971,
+            "p95": 1229.972667712708,
+            "p99": 1663.14700107323
+          },
+          "tpot_ms": {
+            "p50": 19.813600480334625,
+            "p95": 22.24487814993605,
+            "p99": 185.02438473864459
+          },
+          "e2e_ms": {
+            "p50": 2820.769583922811,
+            "p95": 3386.757011420559
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 22797.331024923784
+        }
+      ]
+    },
+    {
+      "topology": "P3",
+      "gpu_count": 4,
+      "bench_root": "results/raw/20260728T005242Z_bench-soak_job167",
+      "best_passing": {
+        "stage": "soak",
+        "concurrency": 256,
+        "repetition": 1,
+        "output_token_goodput": 18586.74458300052,
+        "output_tokens_per_s_per_gpu": 4646.68614575013,
+        "ttft_p95_ms": 410.3707255329935,
+        "tpot_p95_ms": 13.846798915064007
+      },
+      "final_medians": [],
+      "points": [
+        {
+          "stage": "soak",
+          "concurrency": 256,
+          "repetition": 1,
+          "topology": "P3",
+          "gpu_count": 4,
+          "shards": [
+            "results/raw/20260728T005242Z_bench-soak_job167/soak_c256_r1_e0/bench.json",
+            "results/raw/20260728T005242Z_bench-soak_job167/soak_c256_r1_e1/bench.json",
+            "results/raw/20260728T005242Z_bench-soak_job167/soak_c256_r1_e2/bench.json",
+            "results/raw/20260728T005242Z_bench-soak_job167/soak_c256_r1_e3/bench.json"
+          ],
+          "requests": 85620,
+          "errors": 0,
+          "error_rate": 0.0,
+          "output_tokens": 10763025,
+          "wall_seconds": 581.8465848879423,
+          "output_tokens_per_s": 18586.74458300052,
+          "output_tokens_per_s_per_gpu": 4646.68614575013,
+          "ttft_ms": {
+            "p50": 126.68670432445656,
+            "p95": 410.3707255329935,
+            "p99": 547.0531763322651
+          },
+          "tpot_ms": {
+            "p50": 13.20169584420945,
+            "p95": 13.846798915064007,
+            "p99": 16.640618893823873
+          },
+          "e2e_ms": {
+            "p50": 1764.6212799008936,
+            "p95": 1809.3207237776369
+          },
+          "detailed_records": false,
+          "replicas": 4,
+          "warnings": [
+            "no per-request records from this vLLM build; counts and throughput are summed exactly, percentiles are the worst replica rather than a true fleet percentile"
+          ],
+          "passes_guardrails": true,
+          "guardrail_failures": [],
+          "output_token_goodput": 18586.74458300052
+        }
+      ]
+    }
+  ],
+  "recommendation": {
+    "highest_absolute_goodput": {
+      "topology": "P3",
+      "gpu_count": 4,
+      "stage": "final",
+      "concurrency": 512,
+      "repetition": 2,
+      "output_token_goodput": 23097.85520232454,
+      "output_tokens_per_s_per_gpu": 5774.463800581135,
+      "ttft_p95_ms": 1195.3430288471282,
+      "tpot_p95_ms": 21.713422452315953
+    },
+    "highest_per_gpu_goodput": {
+      "topology": "P2",
+      "gpu_count": 2,
+      "stage": "final",
+      "concurrency": 256,
+      "repetition": 2,
+      "output_token_goodput": 11584.165168386855,
+      "output_tokens_per_s_per_gpu": 5792.0825841934275,
+      "ttft_p95_ms": 1188.2212782278657,
+      "tpot_p95_ms": 21.36978703829658
+    }
+  },
+  "notes": [
+    "Each topology was swept to its own saturation point; a fixed concurrency understates larger topologies because per-replica load falls as replicas are added.",
+    "Guardrails are PoC demonstration limits, not customer SLOs.",
+    "Four H200s do not validate 512-H100 reservation behavior."
+  ]
+}

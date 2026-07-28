@@ -394,26 +394,102 @@ def aggregate_bench_root(bench_root: Path, config: dict) -> dict:
     }
 
 
+def consolidate(reports: Sequence[dict], config: dict) -> dict:
+    """Combine per-topology reports into the single tracked inference summary.
+
+    Each bench root covers one topology, so the comparison across P0–P3 has to be
+    assembled here. Per-GPU goodput is what decides the recommendation: absolute
+    goodput always favours whichever topology was given more GPUs.
+    """
+    topologies = []
+    for report in reports:
+        selected = report["selected"]["tag"]
+        topologies.append(
+            {
+                "topology": report["topology"],
+                "gpu_count": report["gpu_count"],
+                "bench_root": report["bench_root"],
+                "best_passing": selected,
+                "final_medians": report["final_medians"],
+                "points": report["points"],
+            }
+        )
+
+    ranked = [item for item in topologies if item["best_passing"]]
+    best_absolute = max(
+        ranked, key=lambda item: item["best_passing"]["output_token_goodput"], default=None
+    )
+    best_per_gpu = max(
+        ranked,
+        key=lambda item: item["best_passing"].get("output_tokens_per_s_per_gpu") or 0.0,
+        default=None,
+    )
+    return {
+        "generated_utc": datetime.now(UTC).isoformat(),
+        "objective": config.get("objective", "output_token_goodput"),
+        "guardrails": config["guardrails"],
+        "topologies": topologies,
+        "recommendation": {
+            "highest_absolute_goodput": None
+            if best_absolute is None
+            else {
+                "topology": best_absolute["topology"],
+                "gpu_count": best_absolute["gpu_count"],
+                **best_absolute["best_passing"],
+            },
+            "highest_per_gpu_goodput": None
+            if best_per_gpu is None
+            else {
+                "topology": best_per_gpu["topology"],
+                "gpu_count": best_per_gpu["gpu_count"],
+                **best_per_gpu["best_passing"],
+            },
+        },
+        "notes": [
+            "Each topology was swept to its own saturation point; a fixed concurrency "
+            "understates larger topologies because per-replica load falls as replicas are added.",
+            "Guardrails are PoC demonstration limits, not customer SLOs.",
+            "Four H200s do not validate 512-H100 reservation behavior.",
+        ],
+    }
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Aggregate vLLM benchmark shards")
-    parser.add_argument("--bench-root", type=Path, required=True)
+    parser.add_argument("--bench-root", type=Path, required=True, action="append")
     parser.add_argument("--config", type=Path, default=Path("configs/benchmark.yaml"))
     parser.add_argument("--out", type=Path, default=Path("results/summary/inference.json"))
     args = parser.parse_args(argv)
 
     config = yaml.safe_load(args.config.read_text())
-    report = aggregate_bench_root(args.bench_root, config)
+    reports = [aggregate_bench_root(root, config) for root in args.bench_root]
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(report, indent=2) + "\n")
-    selected = report["selected"]["tag"]
-    if selected:
-        print(
-            f"selected concurrency={selected['concurrency']} "
-            f"goodput={selected['output_token_goodput']:.2f} tok/s "
-            f"per_gpu={selected['output_tokens_per_s_per_gpu']}"
-        )
+
+    if len(reports) == 1:
+        report = reports[0]
+        args.out.write_text(json.dumps(report, indent=2) + "\n")
+        selected = report["selected"]["tag"]
+        if selected:
+            print(
+                f"selected concurrency={selected['concurrency']} "
+                f"goodput={selected['output_token_goodput']:.2f} tok/s "
+                f"per_gpu={selected['output_tokens_per_s_per_gpu']}"
+            )
+        else:
+            print("no configuration passed guardrails")
     else:
-        print("no configuration passed guardrails")
+        combined = consolidate(reports, config)
+        args.out.write_text(json.dumps(combined, indent=2) + "\n")
+        for item in combined["topologies"]:
+            best = item["best_passing"]
+            if best:
+                print(
+                    f"{item['topology']:>3} ({item['gpu_count']} gpu): "
+                    f"{best['output_token_goodput']:>9.1f} tok/s at c{best['concurrency']} "
+                    f"({best['output_tokens_per_s_per_gpu']:.1f}/gpu)"
+                )
+            else:
+                print(f"{item['topology']:>3}: no point passed guardrails")
     print(f"wrote {args.out}")
     return 0
 

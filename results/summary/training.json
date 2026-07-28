@@ -1,0 +1,98 @@
+{
+  "run_id": "20260727T214242Z_train-final-candidate_ranking_job127",
+  "stage": "train-final-candidate_ranking",
+  "started_utc": "2026-07-27T21:42:42.704108+00:00",
+  "ended_utc": "2026-07-27T21:44:39.796865+00:00",
+  "exit_status": "ok",
+  "objective": "candidate_ranking",
+  "model": {
+    "id": "Qwen/Qwen2.5-7B-Instruct",
+    "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "dtype": "bfloat16"
+  },
+  "dataset": {
+    "id": "cais/mmlu",
+    "config": "professional_law",
+    "adaptation_split": "validation",
+    "final_test_split": "test",
+    "revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+    "pilot_train_size": 150,
+    "pilot_validation_size": 20,
+    "seed": 42,
+    "max_variants_per_question": 4
+  },
+  "lora": {
+    "rank": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "training": {
+    "learning_rate": 2e-05,
+    "epochs": 2,
+    "per_device_batch_size": 2,
+    "gradient_accumulation_steps": 4,
+    "max_length": 1024,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.05,
+    "max_grad_norm": 1.0,
+    "checkpoint_retention": 2,
+    "tf32": true,
+    "seed": 42
+  },
+  "topology": {
+    "world_size": 4,
+    "nodes": "2",
+    "nodelist": "worker-[0-1]",
+    "slurm_job_id": "127",
+    "gpus_visible_to_rank0": [
+      {
+        "index": 0,
+        "name": "NVIDIA H200",
+        "uuid": "b7e1a88f-8ca9-6198-51c1-0ccbd0da68e5"
+      },
+      {
+        "index": 1,
+        "name": "NVIDIA H200",
+        "uuid": "c0782e0c-faba-4353-ec2d-a6ccc74ea5e5"
+      }
+    ],
+    "driver": "580.159.04",
+    "cuda_runtime": "12.4",
+    "packages": {
+      "torch": "2.5.1+cu124",
+      "transformers": "5.14.1",
+      "peft": "0.19.1",
+      "datasets": "5.0.0",
+      "numpy": "2.1.2"
+    }
+  },
+  "throughput": {
+    "steps": 42,
+    "steps_excluding_first": 41,
+    "median_step_seconds": 1.6470185020007193,
+    "median_samples_per_second": 19.429047069676468,
+    "peak_gpu_bytes_rank0": 96902629376,
+    "peak_gpu_gib_rank0": 90.25,
+    "world_size": 4
+  },
+  "loss": {
+    "first_loss": 1.430509428246296e-06,
+    "final_loss": 1.0375899076461792,
+    "median_loss": 1.1481406688690186,
+    "nan_or_inf_count": 0
+  },
+  "artifacts": {
+    "run_dir": "results/raw/20260727T214211Z_train_job127/20260727T214242Z_train-final-candidate_ranking_job127",
+    "adapter": "results/raw/20260727T214211Z_train_job127/20260727T214242Z_train-final-candidate_ranking_job127/adapter",
+    "metrics": "results/raw/20260727T214211Z_train_job127/20260727T214242Z_train-final-candidate_ranking_job127/metrics.jsonl"
+  }
+}

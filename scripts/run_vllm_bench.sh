@@ -39,7 +39,11 @@ def prompts_for(conc: int) -> int:
     count turns high-concurrency runs into a single wave that measures ramp-up
     instead of steady state; eight batches per replica, floored at 256 total.
     """
-    fleet = max(256, conc * 8)
+    soak_prompts = int(plan.get("soak_prompts") or 0)
+    if stage == "soak" and soak_prompts:
+        fleet = soak_prompts
+    else:
+        fleet = max(256, conc * 8)
     return max(fleet // num_replicas, warmup + 8)
 
 # The benchmark CLI changes shape across vLLM releases: 0.8.5 has no --backend and
@@ -129,10 +133,16 @@ for key in sorted(groups):
         procs.append((proc, handle, meta, result_dir))
 
     if stage == "soak":
-        soak_seconds = int(plan.get("soak_minutes") or 10) * 60
-        time.sleep(soak_seconds)
+        # The soak is sized via soak_prompts to finish on its own, because the
+        # client only writes bench.json at the end. This is a safety net for a run
+        # that overshoots: give it the full window plus slack, then stop it.
+        deadline = time.time() + int(plan.get("soak_minutes") or 10) * 60 * 2
+        while time.time() < deadline and any(proc.poll() is None for proc, *_ in procs):
+            time.sleep(5)
         for proc, handle, meta, result_dir in procs:
-            proc.terminate()
+            if proc.poll() is None:
+                print(f"soak overran its window; stopping {meta['tag']}", flush=True)
+                proc.terminate()
     for proc, handle, meta, result_dir in procs:
         rc = proc.wait()
         handle.close()
