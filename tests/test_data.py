@@ -50,20 +50,20 @@ def test_build_question_rejects_the_wrong_number_of_choices():
 
 
 def test_split_is_deterministic(adaptation_pool):
-    first = split_adaptation_pool(adaptation_pool, 150, 20, 42)
-    second = split_adaptation_pool(adaptation_pool, 150, 20, 42)
+    first = split_adaptation_pool(adaptation_pool, 20, 42)
+    second = split_adaptation_pool(adaptation_pool, 20, 42)
     assert [q.qid for q in first[0]] == [q.qid for q in second[0]]
     assert [q.qid for q in first[1]] == [q.qid for q in second[1]]
 
 
 def test_split_does_not_depend_on_input_order(adaptation_pool):
-    forward = split_adaptation_pool(adaptation_pool, 150, 20, 42)
-    backward = split_adaptation_pool(list(reversed(adaptation_pool)), 150, 20, 42)
+    forward = split_adaptation_pool(adaptation_pool, 20, 42)
+    backward = split_adaptation_pool(list(reversed(adaptation_pool)), 20, 42)
     assert [q.qid for q in forward[1]] == [q.qid for q in backward[1]]
 
 
 def test_split_sizes_and_no_overlap(adaptation_pool):
-    train, validation = split_adaptation_pool(adaptation_pool, 150, 20, 42)
+    train, validation = split_adaptation_pool(adaptation_pool, 20, 42)
     assert len(train) == 150
     assert len(validation) == 20
     assert {q.qid for q in train}.isdisjoint({q.qid for q in validation})
@@ -71,25 +71,25 @@ def test_split_sizes_and_no_overlap(adaptation_pool):
 
 
 def test_split_keeps_the_label_balance(adaptation_pool):
-    _, validation = split_adaptation_pool(adaptation_pool, 150, 20, 42)
+    _, validation = split_adaptation_pool(adaptation_pool, 20, 42)
     counts = [sum(1 for q in validation if q.answer == label) for label in range(4)]
     assert counts == [5, 5, 5, 5]
 
 
-def test_split_refuses_a_pool_of_the_wrong_size(adaptation_pool):
-    with pytest.raises(ValueError, match="expects"):
-        split_adaptation_pool(adaptation_pool[:100], 150, 20, 42)
+def test_split_refuses_an_internal_set_that_swallows_the_pool(adaptation_pool):
+    with pytest.raises(ValueError, match="leaves no training data"):
+        split_adaptation_pool(adaptation_pool[:20], 20, 42)
 
 
 def test_split_refuses_an_already_augmented_pool(adaptation_pool):
     # Augmentation has to happen after the split, or the same question leaks into
     # both halves wearing different permutations.
     with pytest.raises(ValueError):
-        split_adaptation_pool(expand(adaptation_pool, 4), 150, 20, 42)
+        split_adaptation_pool(expand(adaptation_pool, 4), 20, 42)
 
 
 def test_augmentation_never_sees_the_held_out_questions(adaptation_pool):
-    train, validation = split_adaptation_pool(adaptation_pool, 150, 20, 42)
+    train, validation = split_adaptation_pool(adaptation_pool, 20, 42)
     sources = {variant.source_qid for variant in expand(train, 4)}
     assert sources.isdisjoint({q.qid for q in validation})
 
@@ -210,11 +210,11 @@ def test_audit_sample_is_capped(adaptation_pool):
 
 
 def test_split_manifest_records_ids_and_balance(adaptation_pool):
-    train, validation = split_adaptation_pool(adaptation_pool, 150, 20, 42)
+    train, validation = split_adaptation_pool(adaptation_pool, 20, 42)
     manifest = split_manifest(train, validation, 42, {"id": "cais/mmlu", "config": "x"})
 
-    assert manifest["pilot_train_size"] == 150
+    assert manifest["pilot_train_size"] == len(adaptation_pool) - 20
     assert manifest["pilot_validation_size"] == 20
-    assert len(manifest["pilot_train_ids"]) == 150
+    assert len(manifest["pilot_train_ids"]) == len(adaptation_pool) - 20
     assert len(set(manifest["pilot_train_ids"]) & set(manifest["pilot_validation_ids"])) == 0
     assert sum(manifest["pilot_validation_label_balance"].values()) == 20

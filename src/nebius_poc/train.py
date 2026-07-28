@@ -29,6 +29,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 
 from nebius_poc.data import (
     Variant,
+    evaluation_holdout,
     expand,
     load_adaptation_pool,
     load_config,
@@ -229,14 +230,24 @@ def build_dataset(
     final: bool = False,
 ) -> tuple[list[EncodedExample], dict]:
     dataset = config["dataset"]
+    partition = {
+        "trainable_split": dataset["trainable_split"],
+        "holdout_fraction": dataset["holdout_fraction"],
+        "seed": dataset["seed"],
+    }
     pool = load_adaptation_pool(
         dataset["id"],
         dataset["config"],
         dataset["adaptation_split"],
         revision=dataset.get("revision"),
+        **partition,
+    )
+    # Loaded only to assert disjointness in the manifest; never trained on.
+    holdout = evaluation_holdout(
+        dataset["id"], dataset["config"], revision=dataset.get("revision"), **partition
     )
     pilot_train, pilot_val = split_adaptation_pool(
-        pool, dataset["pilot_train_size"], dataset["pilot_validation_size"], dataset["seed"]
+        pool, dataset["pilot_validation_size"], dataset["seed"]
     )
 
     if final:
@@ -258,6 +269,7 @@ def build_dataset(
         dataset["seed"],
         dataset,
         dataset_revision=dataset.get("revision"),
+        holdout=holdout,
     )
     manifest["training_mode"] = mode
     manifest["trained_question_ids"] = [question.qid for question in train]

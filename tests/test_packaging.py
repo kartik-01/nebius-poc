@@ -76,17 +76,20 @@ def test_pilot_configs_differ_only_by_objective():
     assert sft == ranking
 
 
-def test_adaptation_split_is_not_the_official_test_split():
-    # Test split is held back for the final base-vs-tuned comparison.
+def test_a_real_share_of_the_category_is_reserved_for_evaluation():
+    # The holdout is what makes the base-vs-tuned comparison meaningful, so it has to
+    # be a substantial slice rather than a token one.
     for name in ("train_sft.yaml", "train_ranking.yaml"):
         dataset = load_config(name)["dataset"]
-        assert dataset["adaptation_split"] != dataset["final_test_split"]
         assert dataset["adaptation_split"] == "validation"
+        assert dataset["adaptation_split"] != dataset["trainable_split"]
+        assert 0.2 <= dataset["holdout_fraction"] <= 0.5
 
 
-def test_pilot_split_sizes_match_the_adaptation_pool():
+def test_internal_selection_set_is_large_enough_to_separate_recipes():
+    # Twenty questions moved in five-point steps and could not rank close candidates.
     dataset = load_config("train_sft.yaml")["dataset"]
-    assert dataset["pilot_train_size"] + dataset["pilot_validation_size"] == 170
+    assert dataset["pilot_validation_size"] >= 50
 
 
 def test_guardrails_are_declared_before_benchmarking():

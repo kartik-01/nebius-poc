@@ -201,9 +201,22 @@ def test_cpu_runs_fall_back_to_fp32():
     assert resolve_dtype("bfloat16", torch.device("cuda", 0)) is torch.bfloat16
 
 
-def test_training_cannot_reach_the_official_test_split():
-    with pytest.raises(ValueError, match="adaptation pool must come from"):
+def test_adaptation_pool_must_start_from_the_validation_split():
+    with pytest.raises(ValueError, match="adaptation pool must start from"):
         load_adaptation_pool("cais/mmlu", "professional_law", "test")
+
+
+def test_training_never_sees_a_reserved_evaluation_question(adaptation_pool, monkeypatch):
+    # The holdout is what the base-vs-tuned comparison is scored on. If a single
+    # reserved question reached the adaptation pool the result would be worthless,
+    # so the manifest builder refuses rather than warning.
+    reserved = adaptation_pool[:10]
+    monkeypatch.setattr(
+        "nebius_poc.train.load_adaptation_pool", lambda *args, **kwargs: adaptation_pool
+    )
+    monkeypatch.setattr("nebius_poc.train.evaluation_holdout", lambda *a, **k: reserved)
+    with pytest.raises(ValueError, match="appear in the adaptation pool"):
+        build_dataset(_dataset_config(), FakeTokenizer(), limit=None, final=True)
 
 
 def test_importing_the_clis_pulls_in_no_model_stack():
@@ -231,8 +244,8 @@ def _dataset_config():
             "id": "cais/mmlu",
             "config": "professional_law",
             "adaptation_split": "validation",
-            "final_test_split": "test",
-            "pilot_train_size": 150,
+            "trainable_split": "test",
+            "holdout_fraction": 0.3,
             "pilot_validation_size": 20,
             "seed": 42,
             "max_variants_per_question": 4,
@@ -241,15 +254,16 @@ def _dataset_config():
     }
 
 
-def test_pilot_build_dataset_uses_the_150_split(adaptation_pool, monkeypatch):
+def test_pilot_build_dataset_holds_out_the_internal_set(adaptation_pool, monkeypatch):
     monkeypatch.setattr(
         "nebius_poc.train.load_adaptation_pool",
         lambda *args, **kwargs: adaptation_pool,
     )
+    monkeypatch.setattr("nebius_poc.train.evaluation_holdout", lambda *a, **k: [])
     examples, manifest = build_dataset(_dataset_config(), FakeTokenizer(), limit=None, final=False)
 
     assert manifest["training_mode"] == "pilot"
-    assert manifest["trained_question_count"] == 150
+    assert manifest["trained_question_count"] == len(adaptation_pool) - 20
     assert set(manifest["trained_question_ids"]) == set(manifest["pilot_train_ids"])
     assert len(examples) == manifest["training_rows_after_augmentation"]
 
@@ -259,13 +273,14 @@ def test_final_build_dataset_trains_the_full_pool(adaptation_pool, monkeypatch):
         "nebius_poc.train.load_adaptation_pool",
         lambda *args, **kwargs: adaptation_pool,
     )
+    monkeypatch.setattr("nebius_poc.train.evaluation_holdout", lambda *a, **k: [])
     examples, manifest = build_dataset(_dataset_config(), FakeTokenizer(), limit=None, final=True)
 
     assert manifest["training_mode"] == "final"
-    assert manifest["trained_question_count"] == 170
+    assert manifest["trained_question_count"] == len(adaptation_pool)
     assert set(manifest["trained_question_ids"]) == {question.qid for question in adaptation_pool}
     # Pilot IDs stay in the manifest for audit even though nothing is held out of training.
-    assert len(manifest["pilot_train_ids"]) == 150
+    assert len(manifest["pilot_train_ids"]) == len(adaptation_pool) - 20
     assert len(manifest["pilot_validation_ids"]) == 20
     assert sorted(manifest["trained_question_ids"]) == manifest["trained_question_ids"]
     assert len(examples) == manifest["training_rows_after_augmentation"]

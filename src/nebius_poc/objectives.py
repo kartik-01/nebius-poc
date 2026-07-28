@@ -195,7 +195,7 @@ _REQUIRED_SECTIONS = ("objective", "model", "dataset", "lora", "training")
 _POSITIVE_INTS = {
     "lora": ("rank", "alpha"),
     "training": ("epochs", "per_device_batch_size", "gradient_accumulation_steps", "max_length"),
-    "dataset": ("pilot_train_size", "pilot_validation_size", "max_variants_per_question"),
+    "dataset": ("pilot_validation_size", "max_variants_per_question"),
 }
 
 
@@ -234,5 +234,11 @@ def validate_training_config(config: dict) -> None:
             f"max_variants_per_question cannot exceed {len(LABELS)}, got {variants}"
         )
 
-    if config["dataset"]["adaptation_split"] == config["dataset"]["final_test_split"]:
-        raise ValueError("adaptation_split and final_test_split must differ")
+    holdout = config["dataset"]["holdout_fraction"]
+    if not isinstance(holdout, int | float) or not 0.0 < holdout < 1.0:
+        raise ValueError(f"dataset.holdout_fraction must be in (0, 1), got {holdout!r}")
+
+    # A zero holdout would put every record in the adaptation pool and leave nothing
+    # to evaluate on, which is the failure this whole split design exists to prevent.
+    if config["dataset"]["adaptation_split"] == config["dataset"]["trainable_split"]:
+        raise ValueError("adaptation_split and trainable_split must differ")

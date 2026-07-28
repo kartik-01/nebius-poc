@@ -10,10 +10,15 @@ dataset:
   id: cais/mmlu
   config: professional_law
   adaptation_split: validation
-  final_test_split: test
+  # MMLU ships 5 dev / 170 validation / 1534 test for this category. Training only on
+  # the 170-question validation split leaves too little signal to adapt anything, so
+  # the category's own records are split here instead: 70% joins the adaptation pool,
+  # 30% is reserved by stable question id as the evaluation holdout. Nothing that is
+  # evaluated is ever trained on, and the split manifest records both id lists.
+  trainable_split: test
+  holdout_fraction: 0.3
   revision: c30699e8356da336a370243923dbaf21066bb9fe
-  pilot_train_size: 150
-  pilot_validation_size: 20
+  pilot_validation_size: 100
   seed: 42
   max_variants_per_question: 4
 

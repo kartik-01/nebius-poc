@@ -17,7 +17,7 @@ from pathlib import Path
 import torch
 import yaml
 
-from nebius_poc.data import Question, load_config, load_split
+from nebius_poc.data import Question, evaluation_holdout, load_config, load_split
 from nebius_poc.objectives import build_scoring_batch, candidate_scores, encode_candidates
 from nebius_poc.prompts import LABELS, render_prompt
 from nebius_poc.report import close_run, format_adherence, open_run, write_json, write_jsonl
@@ -195,7 +195,20 @@ def run(config: dict, evaluation: dict, args: argparse.Namespace) -> Path:
     label = args.label or ("tuned" if args.adapter else "base")
     run_dir, manifest = open_run(f"evaluate-{label}", args.results_root, config)
 
-    questions = load_split(dataset["id"], dataset["config"], args.split)
+    if args.split == "holdout":
+        # The reserved share of the category's records. Training cannot reach these:
+        # load_adaptation_pool carves them out from the same seed and never returns
+        # them, and the split manifest records both id lists for audit.
+        questions = evaluation_holdout(
+            dataset["id"],
+            dataset["config"],
+            revision=dataset.get("revision"),
+            trainable_split=dataset["trainable_split"],
+            holdout_fraction=dataset["holdout_fraction"],
+            seed=dataset["seed"],
+        )
+    else:
+        questions = load_split(dataset["id"], dataset["config"], args.split)
     if args.ids_file:
         ids = load_id_list(args.ids_file)
         questions = filter_questions_by_ids(questions, ids)
@@ -255,7 +268,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--model")
     parser.add_argument("--adapter", type=Path)
     parser.add_argument("--label", help="name used in the run directory and summary")
-    parser.add_argument("--split", default="test")
+    parser.add_argument("--split", default="holdout")
     parser.add_argument(
         "--ids-file",
         type=Path,

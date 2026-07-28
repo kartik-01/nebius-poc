@@ -82,17 +82,95 @@ def build_question(record: dict) -> Question:
     )
 
 
+def partition_holdout(
+    questions: Sequence[Question], holdout_fraction: float, seed: int
+) -> tuple[list[Question], list[Question]]:
+    """Split a pool into (trainable, holdout), stratified by answer label.
+
+    MMLU ships one large split per category and two tiny ones, so the category's own
+    `test` records are the only meaningful source of training data. Reserving a fixed
+    share of them as an evaluation holdout gives a real train/evaluate separation
+    instead of the 170-example adaptation pool the official splits allow.
+
+    Deterministic in the question IDs, so the same seed always reserves the same
+    questions no matter what order the rows arrive in.
+    """
+    if not 0.0 < holdout_fraction < 1.0:
+        raise ValueError(f"holdout_fraction must be in (0, 1), got {holdout_fraction}")
+
+    groups: dict[int, list[Question]] = {}
+    for question in sorted(questions, key=lambda item: item.qid):
+        groups.setdefault(question.answer, []).append(question)
+
+    rng = random.Random(seed)
+    for group in groups.values():
+        rng.shuffle(group)
+
+    wanted = round(len(questions) * holdout_fraction)
+    take = _stratified_take(groups, wanted)
+
+    trainable: list[Question] = []
+    holdout: list[Question] = []
+    for label in sorted(groups):
+        group = groups[label]
+        holdout.extend(group[: take[label]])
+        trainable.extend(group[take[label] :])
+
+    trainable.sort(key=lambda item: item.qid)
+    holdout.sort(key=lambda item: item.qid)
+    return trainable, holdout
+
+
 def load_adaptation_pool(
-    dataset_id: str, config: str, split: str, revision: str | None = None
+    dataset_id: str,
+    config: str,
+    split: str,
+    revision: str | None = None,
+    *,
+    trainable_split: str = "test",
+    holdout_fraction: float = 0.3,
+    seed: int = 42,
 ) -> list[Question]:
-    # The only entry point training code is allowed to call. Refusing anything but the
-    # validation split is what makes test leakage structurally impossible rather than
-    # a rule someone has to remember.
+    """Everything training is allowed to see: the validation split plus the trainable
+    share of `test`.
+
+    The evaluation holdout is carved out here and never returned, so no caller can
+    accidentally train on a question the final comparison will score. That guarantee
+    is structural rather than a rule someone has to remember, and
+    `evaluation_holdout` reproduces the same partition from the same seed.
+    """
     if split != ADAPTATION_POOL_SPLIT:
         raise ValueError(
-            f"adaptation pool must come from the '{ADAPTATION_POOL_SPLIT}' split, got '{split}'"
+            f"adaptation pool must start from the '{ADAPTATION_POOL_SPLIT}' split, got '{split}'"
         )
-    return load_split(dataset_id, config, split, revision=revision)
+
+    pool = load_split(dataset_id, config, split, revision=revision)
+    trainable, _ = partition_holdout(
+        load_split(dataset_id, config, trainable_split, revision=revision),
+        holdout_fraction,
+        seed,
+    )
+    combined = pool + trainable
+    combined.sort(key=lambda item: item.qid)
+    return combined
+
+
+def evaluation_holdout(
+    dataset_id: str,
+    config: str,
+    revision: str | None = None,
+    *,
+    trainable_split: str = "test",
+    holdout_fraction: float = 0.3,
+    seed: int = 42,
+) -> list[Question]:
+    """The questions reserved for the base-versus-tuned comparison."""
+    _, holdout = partition_holdout(
+        load_split(dataset_id, config, trainable_split, revision=revision),
+        holdout_fraction,
+        seed,
+    )
+    return holdout
 
 
 def load_split(
@@ -139,13 +217,24 @@ def _stratified_take(groups: dict[int, list[Question]], wanted: int) -> dict[int
 
 def split_adaptation_pool(
     questions: Sequence[Question],
-    train_size: int,
     validation_size: int,
     seed: int,
 ) -> tuple[list[Question], list[Question]]:
-    total = train_size + validation_size
-    if len(questions) != total:
-        raise ValueError(f"pool holds {len(questions)} records but the split expects {total}")
+    """Carve an internal selection set out of the adaptation pool.
+
+    The pool size follows from the holdout fraction rather than being fixed in the
+    config, so only the internal set is sized here and the rest is training data.
+    """
+    if validation_size >= len(questions):
+        raise ValueError(
+            f"internal set of {validation_size} leaves no training data in a pool "
+            f"of {len(questions)}"
+        )
+    if any(not hasattr(item, "qid") for item in questions):
+        raise ValueError(
+            "split the pool before augmenting: variants share a source question and "
+            "would leak the same content into both halves"
+        )
 
     groups: dict[int, list[Question]] = {}
     # Sort by ID first so the result does not depend on the order the rows arrived in.
@@ -309,12 +398,22 @@ def split_manifest(
     dataset: dict,
     *,
     dataset_revision: str | None = None,
+    holdout: Sequence[Question] = (),
 ) -> dict:
     def balance(questions: Sequence[Question]) -> dict[str, int]:
         counts = dict.fromkeys(LABELS, 0)
         for question in questions:
             counts[LABELS[question.answer]] += 1
         return counts
+
+    trained = {question.qid for question in train} | {question.qid for question in validation}
+    reserved = {question.qid for question in holdout}
+    leaked = sorted(trained & reserved)
+    if leaked:
+        raise ValueError(
+            f"{len(leaked)} evaluation questions appear in the adaptation pool "
+            f"(e.g. {', '.join(leaked[:5])})"
+        )
 
     return {
         "dataset": dataset,
@@ -327,6 +426,11 @@ def split_manifest(
         "pilot_validation_label_balance": balance(validation),
         "pilot_train_ids": [question.qid for question in train],
         "pilot_validation_ids": [question.qid for question in validation],
+        "evaluation_holdout_size": len(holdout),
+        "evaluation_holdout_label_balance": balance(holdout) if holdout else {},
+        # Recorded so the disjointness above is auditable after the fact, not just
+        # asserted at build time.
+        "evaluation_holdout_ids": [question.qid for question in holdout],
     }
 
 
