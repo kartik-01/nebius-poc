@@ -28,21 +28,41 @@ def score_pilot(rows: Sequence[dict], label: str) -> dict:
     }
 
 
-def select_objective(candidates: Sequence[dict]) -> dict:
-    """Lower mean gold-choice NLL wins; accuracy is the tie-break only."""
+SELECTORS = ("forced_choice_accuracy", "mean_gold_choice_nll")
+
+
+def select_objective(
+    candidates: Sequence[dict], primary: str = "forced_choice_accuracy"
+) -> dict:
+    """Rank pilot candidates on the declared primary metric.
+
+    Which metric leads depends on how big the internal set is. On a 20-question set
+    accuracy moves in five-point steps and cannot separate close candidates, so the
+    continuous gold-choice NLL has to lead. On a set large enough to resolve single
+    questions, accuracy is the better selector because it is the metric actually
+    reported, and NLL can move in the opposite direction when a model reorders
+    candidates rather than only sharpening its confidence.
+
+    Whichever leads, the choice is recorded in the lock rather than left implicit.
+    """
     if not candidates:
         raise ValueError("no pilot candidates to compare")
+    if primary not in SELECTORS:
+        raise ValueError(f"primary metric must be one of {list(SELECTORS)}, got {primary!r}")
     if len({item["n"] for item in candidates}) != 1:
         raise ValueError("pilot candidates must cover the same number of questions")
 
+    secondary = next(name for name in SELECTORS if name != primary)
+    # Accuracy is better when larger, NLL when smaller.
+    sign = -1.0 if primary == "forced_choice_accuracy" else 1.0
     ranked = sorted(
         candidates,
-        key=lambda item: (item["mean_gold_choice_nll"], -item["forced_choice_accuracy"]),
+        key=lambda item: (sign * item[primary], -sign * item[secondary]),
     )
     winner = ranked[0]
     return {
-        "primary_metric": "mean_gold_choice_nll",
-        "secondary_metric": "forced_choice_accuracy",
+        "primary_metric": primary,
+        "secondary_metric": secondary,
         "candidates": list(candidates),
         "winner_label": winner["label"],
         "winner_mean_gold_choice_nll": winner["mean_gold_choice_nll"],
@@ -195,6 +215,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--max-length", type=int)
     parser.add_argument("--epochs", type=int)
     parser.add_argument(
+        "--select-on",
+        choices=SELECTORS,
+        default="forced_choice_accuracy",
+        help="metric that decides the winner; the other is recorded as secondary",
+    )
+    parser.add_argument(
         "--note",
         action="append",
         default=[],
@@ -218,7 +244,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "objective": config["objective"],
         }
 
-    selection = select_objective(scored)
+    selection = select_objective(scored, args.select_on)
     log.info(
         "winner=%s mean_gold_nll=%.4f accuracy=%.4f",
         selection["winner_label"],

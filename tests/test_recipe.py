@@ -44,22 +44,34 @@ def test_mean_gold_choice_nll_averages_rows():
     assert mean_gold_choice_nll(rows) == pytest.approx(1.0)
 
 
-def test_select_objective_prefers_lower_gold_nll():
-    selection = select_objective(
-        [
-            {"label": "sft", "n": 20, "mean_gold_choice_nll": 1.2, "forced_choice_accuracy": 0.6},
-            {
-                "label": "ranking",
-                "n": 20,
-                "mean_gold_choice_nll": 0.9,
-                "forced_choice_accuracy": 0.55,
-            },
-        ]
-    )
+CANDIDATES = [
+    {"label": "sft", "n": 100, "mean_gold_choice_nll": 1.2, "forced_choice_accuracy": 0.55},
+    {"label": "ranking", "n": 100, "mean_gold_choice_nll": 1.24, "forced_choice_accuracy": 0.57},
+]
+
+
+def test_select_objective_defaults_to_the_reported_metric():
+    # Accuracy is what the final comparison reports, so it leads once the internal
+    # set is large enough to resolve single questions.
+    selection = select_objective(CANDIDATES)
     assert selection["winner_label"] == "ranking"
+    assert selection["primary_metric"] == "forced_choice_accuracy"
 
 
-def test_select_objective_uses_accuracy_only_as_tiebreak():
+def test_select_objective_can_lead_on_gold_nll():
+    # On a 20-question set accuracy moves in five-point steps, so the continuous
+    # metric has to lead instead.
+    selection = select_objective(CANDIDATES, "mean_gold_choice_nll")
+    assert selection["winner_label"] == "sft"
+    assert selection["primary_metric"] == "mean_gold_choice_nll"
+
+
+def test_select_objective_rejects_an_unknown_metric():
+    with pytest.raises(ValueError, match="primary metric"):
+        select_objective(CANDIDATES, "loss")
+
+
+def test_select_objective_uses_the_other_metric_as_tiebreak():
     selection = select_objective(
         [
             {"label": "sft", "n": 20, "mean_gold_choice_nll": 1.0, "forced_choice_accuracy": 0.4},

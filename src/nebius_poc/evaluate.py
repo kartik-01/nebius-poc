@@ -17,7 +17,13 @@ from pathlib import Path
 import torch
 import yaml
 
-from nebius_poc.data import Question, evaluation_holdout, load_config, load_split
+from nebius_poc.data import (
+    Question,
+    evaluation_holdout,
+    load_adaptation_pool,
+    load_config,
+    load_split,
+)
 from nebius_poc.objectives import build_scoring_batch, candidate_scores, encode_candidates
 from nebius_poc.prompts import LABELS, render_prompt
 from nebius_poc.report import close_run, format_adherence, open_run, write_json, write_jsonl
@@ -195,7 +201,19 @@ def run(config: dict, evaluation: dict, args: argparse.Namespace) -> Path:
     label = args.label or ("tuned" if args.adapter else "base")
     run_dir, manifest = open_run(f"evaluate-{label}", args.results_root, config)
 
-    if args.split == "holdout":
+    if args.split == "pool":
+        # The adaptation pool spans both source splits, so recipe-selection runs
+        # cannot just filter one of them by id. Never used for the final comparison.
+        questions = load_adaptation_pool(
+            dataset["id"],
+            dataset["config"],
+            dataset["adaptation_split"],
+            revision=dataset.get("revision"),
+            trainable_split=dataset["trainable_split"],
+            holdout_fraction=dataset["holdout_fraction"],
+            seed=dataset["seed"],
+        )
+    elif args.split == "holdout":
         # The reserved share of the category's records. Training cannot reach these:
         # load_adaptation_pool carves them out from the same seed and never returns
         # them, and the split manifest records both id lists for audit.

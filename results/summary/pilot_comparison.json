@@ -1,35 +1,35 @@
 {
-  "generated_utc": "2026-07-27T21:12:13.626740+00:00",
+  "generated_utc": "2026-07-28T07:15:27.787910+00:00",
   "selection": {
-    "primary_metric": "mean_gold_choice_nll",
-    "secondary_metric": "forced_choice_accuracy",
+    "primary_metric": "forced_choice_accuracy",
+    "secondary_metric": "mean_gold_choice_nll",
     "candidates": [
       {
-        "label": "sft-e2-lr1e-4",
-        "n": 20,
-        "mean_gold_choice_nll": 2.160743721574545,
-        "forced_choice_accuracy": 0.4
+        "label": "sft-2ep-2e-5",
+        "n": 100,
+        "mean_gold_choice_nll": 1.2031067191436886,
+        "forced_choice_accuracy": 0.55
       },
       {
-        "label": "rank-e2-lr2e-5",
-        "n": 20,
-        "mean_gold_choice_nll": 0.955799973756075,
-        "forced_choice_accuracy": 0.65
+        "label": "ranking-2ep-2e-5",
+        "n": 100,
+        "mean_gold_choice_nll": 1.2435439023096115,
+        "forced_choice_accuracy": 0.57
       }
     ],
-    "winner_label": "rank-e2-lr2e-5",
-    "winner_mean_gold_choice_nll": 0.955799973756075,
-    "winner_forced_choice_accuracy": 0.65
+    "winner_label": "ranking-2ep-2e-5",
+    "winner_mean_gold_choice_nll": 1.2435439023096115,
+    "winner_forced_choice_accuracy": 0.57
   },
   "sources": {
-    "sft-e2-lr1e-4": {
+    "sft-2ep-2e-5": {
       "config": "configs/train_sft.yaml",
-      "forced_choice": "results/raw/20260727T210007Z_evaluate-pilot-sft-e2_job122/20260727T210032Z_evaluate-pilot-sft-e2_job122/forced_choice.jsonl",
+      "forced_choice": "results/raw/20260728T071021Z_evaluate-pilot-sft_job181/20260728T071046Z_evaluate-pilot-sft_job181/forced_choice.jsonl",
       "objective": "completion_sft"
     },
-    "rank-e2-lr2e-5": {
+    "ranking-2ep-2e-5": {
       "config": "configs/train_ranking.yaml",
-      "forced_choice": "results/raw/20260727T210933Z_evaluate-pilot-rank-e2-lr2e5_job126/20260727T210958Z_evaluate-pilot-rank-e2-lr2e5_job126/forced_choice.jsonl",
+      "forced_choice": "results/raw/20260728T065228Z_evaluate-pilot-rank_job179/20260728T065253Z_evaluate-pilot-rank_job179/forced_choice.jsonl",
       "objective": "candidate_ranking"
     }
   }
