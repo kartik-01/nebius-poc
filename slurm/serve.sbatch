@@ -11,6 +11,11 @@
 # Cancel when benchmarking is done: scancel $JOBID
 #
 #SBATCH --job-name=nebius-serve
+#SBATCH --cpus-per-task=16
+# Weights live on the GPU; the host side only stages them. Without an explicit
+# request Slurm reserves the node's entire memory, which starves the benchmark
+# client and anyone else sharing the cluster.
+#SBATCH --mem=256G
 #SBATCH --time=02:00:00
 #SBATCH --output=logs/serve-%j.out
 #SBATCH --error=logs/serve-%j.err

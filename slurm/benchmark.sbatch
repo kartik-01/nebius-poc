@@ -14,6 +14,10 @@
 #SBATCH --job-name=nebius-bench
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+# Client-only load generator. Without an explicit request Slurm reserves the whole
+# node's memory, which cannot be satisfied while the serve job holds both nodes.
+#SBATCH --mem=32G
 #SBATCH --time=01:30:00
 #SBATCH --output=logs/bench-%j.out
 #SBATCH --error=logs/bench-%j.err
