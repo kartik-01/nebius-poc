@@ -1,0 +1,70 @@
+{
+  "basis": {
+    "source": "results/summary/inference.json",
+    "topology": "P2",
+    "gpus_measured": 2,
+    "measured_tokens_per_s_per_gpu": 6139.618074012586,
+    "workload": "512 input tokens, 128 output tokens per request",
+    "guardrails": {
+      "p95_ttft_ms": 2000,
+      "p95_tpot_ms": 100,
+      "max_error_rate": 0.0
+    }
+  },
+  "assumptions": [
+    "Replication scales linearly. Measured flat per-GPU goodput across 1, 2 and 4 GPUs; not demonstrated beyond 4.",
+    "Sized at 80 % of measured peak, because the peak sits at the guardrail boundary.",
+    "H200 measurements. H100 capacity must be re-measured on the target SKU.",
+    "Request shape is the benchmark's, not the customer's traffic."
+  ],
+  "scenarios": [
+    {
+      "target_output_tokens_per_s": 10000,
+      "headroom_fraction": 0.2,
+      "usable_tokens_per_s_per_gpu": 4911.694459210069,
+      "gpus_required": 3,
+      "delivered_tokens_per_s": 14735.083377630206,
+      "cost": {
+        "output_tokens_per_gpu_hour": 17682100.05315625,
+        "gpu_hours_per_million_output_tokens": 0.05655436837218328,
+        "note": "pass --gpu-hour-usd to add cost; no price is assumed here"
+      }
+    },
+    {
+      "target_output_tokens_per_s": 50000,
+      "headroom_fraction": 0.2,
+      "usable_tokens_per_s_per_gpu": 4911.694459210069,
+      "gpus_required": 11,
+      "delivered_tokens_per_s": 54028.63905131076,
+      "cost": {
+        "output_tokens_per_gpu_hour": 17682100.05315625,
+        "gpu_hours_per_million_output_tokens": 0.05655436837218328,
+        "note": "pass --gpu-hour-usd to add cost; no price is assumed here"
+      }
+    },
+    {
+      "target_output_tokens_per_s": 100000,
+      "headroom_fraction": 0.2,
+      "usable_tokens_per_s_per_gpu": 4911.694459210069,
+      "gpus_required": 21,
+      "delivered_tokens_per_s": 103145.58364341145,
+      "cost": {
+        "output_tokens_per_gpu_hour": 17682100.05315625,
+        "gpu_hours_per_million_output_tokens": 0.05655436837218328,
+        "note": "pass --gpu-hour-usd to add cost; no price is assumed here"
+      }
+    },
+    {
+      "target_output_tokens_per_s": 500000,
+      "headroom_fraction": 0.2,
+      "usable_tokens_per_s_per_gpu": 4911.694459210069,
+      "gpus_required": 102,
+      "delivered_tokens_per_s": 500992.834839427,
+      "cost": {
+        "output_tokens_per_gpu_hour": 17682100.05315625,
+        "gpu_hours_per_million_output_tokens": 0.05655436837218328,
+        "note": "pass --gpu-hour-usd to add cost; no price is assumed here"
+      }
+    }
+  ]
+}

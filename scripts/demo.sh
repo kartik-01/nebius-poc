@@ -146,13 +146,13 @@ PY
 
 step_train() {
   title "2. Multi-node training"
-  note "Qwen2.5-7B LoRA, 2 nodes x 2 GPUs, recipe pinned by recipe_lock.json"
+  note "Qwen2.5-7B base, LoRA, 2 nodes x 2 GPUs, recipe pinned by recipe_lock.json"
   local job
   # shellcheck disable=SC2046
   job="$(TRAIN_CONFIG=configs/train_ranking.yaml TRAIN_FINAL=1 \
         RECIPE_LOCK=results/summary/recipe_lock.json \
         sbatch --parsable $(sbatch_args) slurm/train.sbatch)"
-  note "submitted job ${job}, expect about 2.5 minutes"
+  note "submitted job ${job}, expect about 10 minutes on 4,964 rows"
   echo
   follow_job "${job}" "logs/train-${job}.err" 'applied recipe lock|training rows|adapter written'
   echo
@@ -186,7 +186,7 @@ PY
 
 step_accuracy() {
   title "3. Accuracy, base versus tuned"
-  note "1,534 held-out questions, paired by stable question id"
+  note "460 reserved questions, never trained on, paired by stable question id"
   "${PY}" - <<'PY'
 import glob, json
 f = json.load(open("results/summary/accuracy.json"))["forced_choice"]
@@ -220,8 +220,8 @@ except (IndexError, FileNotFoundError):
     pass
 PY
   echo
-  note "the interval spans zero: report the direction, not a robust gain"
-  note "gold-choice NLL fell 6.13 to 1.18, an 81% reduction in the same runs"
+  note "significant: the interval excludes zero and McNemar rejects at p=0.013"
+  note "format adherence was 100% on both sides, so the gain is answer selection"
 }
 
 step_throughput() {
