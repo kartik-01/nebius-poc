@@ -3,7 +3,7 @@
 #
 #   ./scripts/demo.sh              walk every step, pausing between them
 #   ./scripts/demo.sh validate     run a single step
-#   ./scripts/demo.sh --reuse      show the last training run instead of submitting
+#   ./scripts/demo.sh --reuse      show recorded runs instead of submitting jobs
 #   ./scripts/demo.sh --list       show the step names
 #
 # Live steps submit a Slurm job and show progress until it finishes on its own.
@@ -28,6 +28,10 @@ fi
 
 PAUSE=1
 REUSE="${DEMO_REUSE:-0}"
+MEASURE=0
+MERGED_MODEL="${MERGED_MODEL:-}"
+BENCH_ROOTS=()
+frames='|/-\'
 PY="${ROOT}/.venv/bin/python"
 [[ -x "${PY}" ]] || PY="python3"
 
@@ -100,6 +104,102 @@ sbatch_args() {
   [[ -n "${SLURM_QOS:-}" ]] && printf ' --qos=%s' "${SLURM_QOS}"
 }
 
+# A vLLM server sleeps until cancelled, so anything launched here must be cleaned
+# up even when the run is interrupted. An orphaned server holds its GPUs until the
+# job time limit expires, which on a shared cluster is somebody else's problem.
+SERVE_JOBS=()
+
+cancel_serve_jobs() {
+  local job
+  for job in "${SERVE_JOBS[@]:-}"; do
+    [[ -n "${job}" ]] || continue
+    if squeue -j "${job}" -h -o '%A' 2>/dev/null | grep -q .; then
+      warn "cancelling serve job ${job}"
+      scancel "${job}" 2>/dev/null || true
+    fi
+  done
+  SERVE_JOBS=()
+}
+trap cancel_serve_jobs EXIT INT TERM
+
+# Slurm resources per topology. configs/serve_topologies.yaml is the source of
+# truth and serve.sbatch refuses a mismatch, so these must agree with it.
+topology_resources() {
+  case "$1" in
+    P0)    printf '%s' "--nodes=1 --gpus-per-node=1" ;;
+    P1|P2) printf '%s' "--nodes=1 --gpus-per-node=2" ;;
+    P3)    printf '%s' "--nodes=2 --gpus-per-node=2" ;;
+    *) return 1 ;;
+  esac
+}
+
+# The serve run directory is stamped at job start, not at submit, so it can only
+# be found after the job is running. Guessing the timestamp wastes an allocation.
+wait_for_endpoints() {
+  local job="$1" waited=0 run=""
+  while (( waited < 900 )); do
+    run="$(ls -d results/raw/*serve-*_job"${job}" 2>/dev/null | head -1)"
+    if [[ -n "${run}" && -f "${run}/endpoints.json" ]]; then
+      printf '\r%-72s\r' ''
+      printf '%s\n' "${run}"
+      return 0
+    fi
+    if ! squeue -j "${job}" -h -o '%T' 2>/dev/null | grep -q .; then
+      printf '\r%-72s\r' ''
+      fail "serve job ${job} exited before publishing endpoints"
+      return 1
+    fi
+    sleep 5
+    waited=$((waited + 5))
+    printf '\r  %s waiting for endpoints  %ss ' "${frames:0:1}" "${waited}" >&2
+  done
+  printf '\r%-72s\r' ''
+  fail "timed out waiting for endpoints from serve job ${job}"
+  return 1
+}
+
+# Serve one topology, run the given benchmark stages against it, then cancel the
+# server before returning so the next topology can have the GPUs.
+measure_topology() {
+  local topo="$1"; shift
+  local resources job run stage_spec stage conc bench
+
+  note "topology ${topo}: starting vLLM"
+  # shellcheck disable=SC2046
+  resources="$(topology_resources "${topo}")"
+  # shellcheck disable=SC2046
+  job="$(TOPOLOGY="${topo}" MODEL_PATH="${MERGED_MODEL}" \
+        sbatch --parsable $(sbatch_args) ${resources} slurm/serve.sbatch)"
+  SERVE_JOBS+=("${job}")
+  note "serve job ${job}, loading the model"
+
+  if ! run="$(wait_for_endpoints "${job}")"; then
+    cancel_serve_jobs
+    return 1
+  fi
+  ok "endpoints ready: $(basename "${run}")"
+
+  for stage_spec in "$@"; do
+    stage="${stage_spec%%:*}"
+    conc="${stage_spec#*:}"
+    note "${topo} ${stage} at concurrency ${conc}"
+    # shellcheck disable=SC2046
+    bench="$(SERVE_RUN="${run}" STAGE="${stage}" CONCURRENCY="${conc}" \
+            SOAK_PROMPTS="${SOAK_PROMPTS:-85620}" \
+            sbatch --parsable $(sbatch_args) --nodes=1 --gpus-per-node=0 \
+            slurm/benchmark.sbatch)"
+    if follow_job "${bench}" "logs/bench-${bench}.out" 'stage|concurrency|wrote'; then
+      BENCH_ROOTS+=("$(ls -d results/raw/*bench-${stage}_job"${bench}" 2>/dev/null | head -1)")
+    else
+      fail "${topo} ${stage} did not complete"
+    fi
+  done
+
+  scancel "${job}" 2>/dev/null || true
+  SERVE_JOBS=()
+  ok "${topo} done, server released"
+}
+
 step_preflight() {
   title "Pre-flight"
   sinfo | sed 's/^/  /'
@@ -114,20 +214,55 @@ step_preflight() {
   fi
 }
 
+# Most recent full validation that produced a summary. The glob excludes the
+# smoke runs, whose directories are named *_validate-smoke_job* and which report
+# a deliberately narrower set of checks.
+latest_validate_run() {
+  local dir
+  while IFS= read -r dir; do
+    [[ -f "${dir}/summary.json" ]] || continue
+    printf '%s\n' "${dir}"
+    return 0
+  done < <(ls -dt results/raw/*_validate_job* 2>/dev/null)
+  return 1
+}
+
 step_validate() {
   title "1. Qualify the allocation"
   note "portable checks on 4 GPUs, then intra-node and 3x inter-node NCCL"
-  local job
+
+  local run job
+  if (( REUSE )); then
+    if run="$(latest_validate_run)"; then
+      warn "reuse requested: showing the last completed run, nothing was submitted"
+      echo
+      show_validate_run "${run}"
+      return 0
+    fi
+    warn "no completed run to reuse, submitting a live job instead"
+  fi
+
   # shellcheck disable=SC2046
   job="$(sbatch --parsable $(sbatch_args) slurm/validate.sbatch)"
   note "submitted job ${job}"
   echo
   follow_job "${job}" "logs/validate-${job}.out" 'using NCCL binary|Avg bus bandwidth|artifacts in'
   echo
-  local run
   run="$(ls -dt results/raw/*_validate_job"${job}" 2>/dev/null | head -1)"
-  [[ -n "${run}" ]] || run="$(ls -dt results/raw/*_validate_job* | head -1)"
-  "${PY}" - "${run}" <<'PY'
+  if [[ -z "${run}" ]]; then
+    fail "no run directory for job ${job}"
+    if run="$(latest_validate_run)"; then
+      warn "falling back to the last completed run"
+      echo
+      show_validate_run "${run}"
+    fi
+    return 1
+  fi
+  show_validate_run "${run}"
+}
+
+show_validate_run() {
+  "${PY}" - "$1" <<'PY'
 import json, sys
 d = json.load(open(f"{sys.argv[1]}/summary.json"))
 n = d["network"]
@@ -272,7 +407,58 @@ if f["ci_low_pp"] > 0 and g["base"]["format_adherence"] == g["tuned"]["format_ad
 PY
 }
 
+# The full sweep: merge, then four topologies each driven to its own saturation
+# point, then a soak, then aggregation. About 40 minutes. Deliberately not part of
+# a normal demo run, which is why it sits behind --measure.
+measure_throughput() {
+  title "4a. Measuring inference throughput"
+  note "four topologies, each swept to its own saturation point, then a 10 minute soak"
+  note "about 40 minutes; servers are cancelled automatically, including on Ctrl-C"
+
+  MERGED_MODEL="${MERGED_MODEL:-${SHARED_ROOT:-${ROOT}}/models/tuned-merged}"
+  BENCH_ROOTS=()
+
+  if [[ ! -f "${MERGED_MODEL}/config.json" ]]; then
+    local adapter job
+    adapter="$(ls -dt results/raw/*_train_job*/*/adapter 2>/dev/null | head -1)"
+    [[ -n "${adapter}" ]] || { fail "no trained adapter found; run the train step first"; return 1; }
+    note "merging ${adapter} into ${MERGED_MODEL}"
+    # shellcheck disable=SC2046
+    job="$(ADAPTER="${PWD}/${adapter#./}" MERGE_OUT="${MERGED_MODEL}" \
+          sbatch --parsable $(sbatch_args) slurm/merge.sbatch)"
+    follow_job "${job}" "logs/merge-${job}.out" 'merged|verification' || return 1
+  else
+    ok "merged model" "${MERGED_MODEL}"
+  fi
+
+  # Screen the small topologies to find each knee, then take repetitions at the
+  # operating point on the two that carry the headline numbers. P3 keeps one
+  # server for both its final run and the soak.
+  measure_topology P0 "screen:64,128,256"      || true
+  measure_topology P1 "screen:128,256,512"     || true
+  measure_topology P2 "final:256"              || true
+  measure_topology P3 "final:512" "soak:256"   || true
+
+  if (( ${#BENCH_ROOTS[@]} == 0 )); then
+    fail "no benchmark runs completed, leaving results/summary/inference.json alone"
+    return 1
+  fi
+
+  note "aggregating ${#BENCH_ROOTS[@]} benchmark runs"
+  local args=()
+  local root
+  for root in "${BENCH_ROOTS[@]}"; do
+    [[ -n "${root}" ]] && args+=(--bench-root "${root}")
+  done
+  "${PY}" scripts/aggregate_benchmarks.py "${args[@]}" \
+    --out results/summary/inference.json || return 1
+  ok "results/summary/inference.json rebuilt from this run"
+}
+
 step_throughput() {
+  if (( MEASURE )); then
+    measure_throughput || warn "measurement incomplete, showing whatever is on disk"
+  fi
   title "4. Inference throughput"
   note "output-token goodput under p95 TTFT < 2000 ms, p95 TPOT < 100 ms, zero errors"
   "${PY}" - <<'PY'
@@ -312,11 +498,15 @@ PY
 declare -a STEPS=(preflight validate train accuracy throughput)
 
 usage() {
-  echo "usage: ./scripts/demo.sh [--no-pause] [--reuse] [step ...]"
+  echo "usage: ./scripts/demo.sh [--no-pause] [--reuse] [--measure] [step ...]"
   echo "steps: ${STEPS[*]}"
   echo
-  echo "  --reuse   show the last completed training run instead of submitting a"
-  echo "            new one."
+  echo "  --reuse     show the last completed validation and training runs instead"
+  echo "              of submitting new ones. Nothing reaches the cluster, so the"
+  echo "              whole walkthrough works while it is busy."
+  echo "  --measure   with the throughput step, run the real serving sweep first:"
+  echo "              merge, four topologies, a soak, then aggregate. About 40"
+  echo "              minutes. Not for a live demo. Servers are cancelled on exit."
 }
 
 main() {
@@ -326,6 +516,7 @@ main() {
       --list) printf '%s\n' "${STEPS[@]}"; return 0 ;;
       --no-pause) PAUSE=0 ;;
       --reuse) REUSE=1 ;;
+      --measure) MEASURE=1 ;;
       -h|--help) usage; return 0 ;;
       *) requested+=("$1") ;;
     esac
