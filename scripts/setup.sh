@@ -34,6 +34,32 @@ bad()  { printf '  %s%-22s%s %s\n' "${R}" "$1" "${N}" "${2:-}"; MISSING=1; }
 head_() { printf '\n%s%s%s\n' "${B}" "$1" "${N}"; }
 note() { printf '  %s%s%s\n' "${D}" "$1" "${N}"; }
 
+env_path() { [[ -f configs/cluster.env ]] && grep -E "^$1=" configs/cluster.env | cut -d= -f2- || true; }
+
+# Record a value only when the key is still blank, so a config carried over by
+# --from or edited by hand is never clobbered.
+fill_env_if_empty() {
+  [[ -f configs/cluster.env ]] || return 0
+  local key="$1" val="$2" cur
+  cur="$(grep -E "^${key}=" configs/cluster.env | head -1 | cut -d= -f2-)"
+  [[ -z "${cur}" ]] || return 0
+  sed -i "s|^${key}=.*|${key}=${val}|" configs/cluster.env
+}
+
+# Read a Slurm value off the cluster, but only accept an unambiguous answer.
+# Several partitions or accounts means a choice, and a setup script has no
+# business making that choice for someone.
+discover_slurm() {
+  local value=""
+  case "$1" in
+    partition) value="$(sinfo -h -o '%P' 2>/dev/null | grep '\*$' | tr -d '*' | sort -u)" ;;
+    account)   value="$(sacctmgr -nP show assoc user="${USER}" format=Account 2>/dev/null | sed '/^$/d' | sort -u)" ;;
+    qos)       value="$(sacctmgr -nP show assoc user="${USER}" format=QOS 2>/dev/null | tr ',' '\n' | sed '/^$/d' | sort -u)" ;;
+  esac
+  [[ "$(printf '%s\n' "${value}" | grep -c .)" == "1" ]] || return 1
+  printf '%s' "${value}"
+}
+
 usage() {
   sed -n '2,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
@@ -94,20 +120,35 @@ else
   note "run ./scripts/discover_cluster.sh to read the values off the cluster"
 fi
 
+# ------------------------------------------------------------------- association
+head_ "Slurm association"
+if [[ ! -f configs/cluster.env ]]; then
+  todo "slurm values" "no configs/cluster.env to write to"
+else
+  if (( ! CHECK )); then
+    # /tmp is the conventional node-local scratch. It is a default rather than a
+    # discovery, so it is only ever used to fill a blank.
+    for spec in "SLURM_PARTITION:partition" "SLURM_ACCOUNT:account" "SLURM_QOS:qos"; do
+      key="${spec%%:*}"
+      [[ -n "$(env_path "${key}")" ]] && continue
+      if found="$(discover_slurm "${spec#*:}")"; then
+        fill_env_if_empty "${key}" "${found}"
+      fi
+    done
+    fill_env_if_empty LOCAL_SCRATCH "/tmp"
+  fi
+  for key in SLURM_PARTITION SLURM_ACCOUNT SLURM_QOS LOCAL_SCRATCH; do
+    value="$(env_path "${key}")"
+    if [[ -n "${value}" ]]; then
+      ok "${key}" "${value}"
+    else
+      todo "${key}" "blank, and could not be read unambiguously from the cluster"
+    fi
+  done
+fi
+
 # ------------------------------------------------------------------------ images
 head_ "Container images"
-env_path() { [[ -f configs/cluster.env ]] && grep -E "^$1=" configs/cluster.env | cut -d= -f2- || true; }
-
-# Record a path only when this script created the artifact and the key is still
-# blank, so a config carried over by --from or edited by hand is never clobbered.
-fill_env_if_empty() {
-  [[ -f configs/cluster.env ]] || return 0
-  local key="$1" val="$2" cur
-  cur="$(grep -E "^${key}=" configs/cluster.env | head -1 | cut -d= -f2-)"
-  [[ -z "${cur}" ]] || return 0
-  sed -i "s|^${key}=.*|${key}=${val}|" configs/cluster.env
-}
-
 if (( BUILD )) && (( ! CHECK )); then
   note "importing base images and building the validator (about 15 minutes)"
   # 'all' imports the images and downloads the wheelhouse in one pass, so the
