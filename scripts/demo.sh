@@ -218,10 +218,19 @@ try:
           f"identical ids and order: {b == t}")
 except (IndexError, FileNotFoundError):
     pass
+
+# Read the verdict off the numbers instead of asserting it. If a rerun ever lands a
+# non-significant result, this says so rather than claiming significance anyway.
+print()
+if f["ci_low_pp"] > 0 and f["mcnemar_p"] < 0.05:
+    print(f"  significant: the interval excludes zero and McNemar rejects at "
+          f"p={f['mcnemar_p']:.3f}")
+else:
+    print(f"  not significant at 0.05: CI {f['ci_low_pp']:+.2f} to "
+          f"{f['ci_high_pp']:+.2f} pp, McNemar p={f['mcnemar_p']:.3f}")
+if f["ci_low_pp"] > 0 and g["base"]["format_adherence"] == g["tuned"]["format_adherence"] == 1.0:
+    print("  format adherence was 100% on both sides, so the gain is answer selection")
 PY
-  echo
-  note "significant: the interval excludes zero and McNemar rejects at p=0.013"
-  note "format adherence was 100% on both sides, so the gain is answer selection"
 }
 
 step_throughput() {
@@ -248,10 +257,17 @@ if soak:
     print(f"  soak: {p['requests']:,} requests over {p['wall_seconds']:.0f} s, "
           f"{p['errors']} errors, {p['output_tokens_per_s']:,.0f} tok/s, "
           f"p95 TTFT {p['ttft_ms']['p95']:.0f} ms")
+
+# Computed, not hardcoded. A stale literal here would contradict the table printed
+# directly above it, which is the one place nobody can afford a wrong number.
+best = {name: b["output_token_goodput"] for name, _, b in rows}
+if {"P1", "P2"} <= best.keys():
+    gain = (best["P2"] / best["P1"] - 1.0) * 100.0
+    print()
+    print(f"  P2 beats P1 by {gain:.1f}% on the same 2 GPUs: "
+          "replication over tensor parallelism")
+    print("  per-GPU is flat across 1, 2 and 4 GPUs, so replication scales linearly")
 PY
-  echo
-  note "P2 beats P1 by 22.8% on the same 2 GPUs: replication over tensor parallelism"
-  note "per-GPU is flat across 1, 2 and 4 GPUs, so replication scales linearly"
 }
 
 declare -a STEPS=(preflight validate train accuracy throughput)
