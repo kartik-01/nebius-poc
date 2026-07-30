@@ -96,17 +96,30 @@ from, and those are tracked.
 
 ## Getting started
 
+One command sets up a fresh clone:
+
+```bash
+./scripts/setup.sh --check              # report what is present and what is missing
+./scripts/setup.sh                      # venv, config skeleton, tests
+./scripts/setup.sh --from <checkout>    # reuse images, wheels and cache from another checkout
+./scripts/setup.sh --build              # build images and prefetch weights, about 25 minutes
+```
+
+It is idempotent, so re-running costs seconds and repeats no downloads. The
+default does nothing slower than `pip`, which makes it safe to run before you
+know whether you have cluster access.
+
+Cluster-specific values are never guessed. `configs/cluster.env` is created from
+the template for you to fill in, and `./scripts/discover_cluster.sh` reads the
+values off the cluster without writing them anywhere.
+
+The individual steps remain available if you would rather drive them yourself:
+
 ```bash
 make install        # create .venv and install the package with dev extras
 make test           # offline unit tests, no network, no GPU
 make lint           # ruff
 make prepare-data   # build the split manifest and the augmentation audit
-```
-
-Cluster-specific values are never hardcoded. Copy the examples and fill them in
-from discovery:
-
-```bash
 cp configs/cluster.env.example configs/cluster.env
 cp .env.example .env
 ```
@@ -115,6 +128,25 @@ cp .env.example .env
 `Qwen/Qwen2.5-0.5B` on CPU. It is opt-in because it is the only local step that
 downloads weights, and it checks the plumbing rather than producing meaningful
 accuracy. The 7B model is never fetched implicitly.
+
+## Running it
+
+```bash
+./scripts/demo.sh              # every step, pausing between them
+./scripts/demo.sh accuracy     # a single step
+./scripts/demo.sh --reuse      # show the last training run instead of submitting a new one
+./scripts/demo.sh --list       # the step names
+```
+
+Steps are `preflight`, `validate`, `train`, `accuracy`, `throughput`.
+
+`validate` and `train` submit real Slurm jobs and follow them until they finish
+on their own, so nothing needs interrupting. `accuracy` and `throughput` read the
+tracked summaries under `results/summary/` and need no cluster access at all. A
+step that fails does not stop the ones after it.
+
+For the underlying sbatch commands, monitoring, and troubleshooting, see
+`docs/RUNBOOK.md`.
 
 ## Documentation
 

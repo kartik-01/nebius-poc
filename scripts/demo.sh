@@ -3,10 +3,13 @@
 #
 #   ./scripts/demo.sh              walk every step, pausing between them
 #   ./scripts/demo.sh validate     run a single step
+#   ./scripts/demo.sh --reuse      show the last training run instead of submitting
 #   ./scripts/demo.sh --list       show the step names
 #
 # Live steps submit a Slurm job and show progress until it finishes on its own.
 # Nothing needs Ctrl-C. Steps that only read artifacts never touch the cluster.
+# A step that fails does not stop the ones after it, so a bad allocation cannot
+# cost you the accuracy and throughput sections.
 set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,6 +27,7 @@ else
 fi
 
 PAUSE=1
+REUSE="${DEMO_REUSE:-0}"
 PY="${ROOT}/.venv/bin/python"
 [[ -x "${PY}" ]] || PY="python3"
 
@@ -144,10 +148,34 @@ for k, v in rows:
 PY
 }
 
+# Most recent training run that finished cleanly, for --reuse and for recovering a
+# demo when the cluster will not give up four GPUs.
+latest_train_run() {
+  local dir
+  while IFS= read -r dir; do
+    [[ -f "${dir}/manifest.json" && -f "${dir}/metrics.jsonl" ]] || continue
+    grep -q '"exit_status": "ok"' "${dir}/manifest.json" 2>/dev/null || continue
+    printf '%s\n' "${dir}"
+    return 0
+  done < <(ls -dt results/raw/*_train_job*/*/ 2>/dev/null)
+  return 1
+}
+
 step_train() {
   title "2. Multi-node training"
   note "Qwen2.5-7B base, LoRA, 2 nodes x 2 GPUs, recipe pinned by recipe_lock.json"
-  local job
+
+  local run job
+  if (( REUSE )); then
+    if run="$(latest_train_run)"; then
+      warn "reuse requested: showing the last completed run, nothing was submitted"
+      echo
+      show_train_run "${run}"
+      return 0
+    fi
+    warn "no completed run to reuse, submitting a live job instead"
+  fi
+
   # shellcheck disable=SC2046
   job="$(TRAIN_CONFIG=configs/train_ranking.yaml TRAIN_FINAL=1 \
         RECIPE_LOCK=results/summary/recipe_lock.json \
@@ -156,10 +184,21 @@ step_train() {
   echo
   follow_job "${job}" "logs/train-${job}.err" 'applied recipe lock|training rows|adapter written'
   echo
-  local run
   run="$(ls -d results/raw/*_train_job"${job}"/*/ 2>/dev/null | head -1)"
-  [[ -n "${run}" ]] || { fail "no run directory for job ${job}"; return 1; }
-  "${PY}" - "${run}" <<'PY'
+  if [[ -z "${run}" ]]; then
+    fail "no run directory for job ${job}"
+    if run="$(latest_train_run)"; then
+      warn "falling back to the last completed run"
+      echo
+      show_train_run "${run}"
+    fi
+    return 1
+  fi
+  show_train_run "${run}"
+}
+
+show_train_run() {
+  "${PY}" - "$1" <<'PY'
 import json, statistics, sys
 d = sys.argv[1]
 m = json.load(open(f"{d}/manifest.json"))
@@ -273,8 +312,11 @@ PY
 declare -a STEPS=(preflight validate train accuracy throughput)
 
 usage() {
-  echo "usage: ./scripts/demo.sh [--no-pause] [step ...]"
+  echo "usage: ./scripts/demo.sh [--no-pause] [--reuse] [step ...]"
   echo "steps: ${STEPS[*]}"
+  echo
+  echo "  --reuse   show the last completed training run instead of submitting a"
+  echo "            new one."
 }
 
 main() {
@@ -283,13 +325,12 @@ main() {
     case "$1" in
       --list) printf '%s\n' "${STEPS[@]}"; return 0 ;;
       --no-pause) PAUSE=0 ;;
+      --reuse) REUSE=1 ;;
       -h|--help) usage; return 0 ;;
       *) requested+=("$1") ;;
     esac
     shift
   done
-
-  : "${SLURM_PARTITION:?set SLURM_PARTITION in configs/cluster.env}"
 
   if (( ${#requested[@]} == 0 )); then
     requested=("${STEPS[@]}")
@@ -297,7 +338,16 @@ main() {
     PAUSE=0
   fi
 
-  local first=1
+  # Only the steps that submit jobs need a partition. The display steps read
+  # results/summary/ and must work in a fresh clone, before configs/cluster.env
+  # exists, so anyone can see the numbers without cluster access.
+  for name in "${requested[@]}"; do
+    case "${name}" in
+      validate|train) : "${SLURM_PARTITION:?set SLURM_PARTITION in configs/cluster.env}" ;;
+    esac
+  done
+
+  local first=1 failed=0
   for name in "${requested[@]}"; do
     if ! declare -F "step_${name}" >/dev/null; then
       fail "unknown step: ${name}"
@@ -306,9 +356,16 @@ main() {
     fi
     (( first )) || pause
     first=0
-    "step_${name}"
+    # Keep going if a step fails. Losing the accuracy and throughput sections
+    # because a training job died is the worst thing that can happen live, and
+    # those two read from results/ and are unaffected by a bad allocation.
+    if ! "step_${name}"; then
+      failed=1
+      fail "step ${name} did not complete, continuing with the rest"
+    fi
   done
   echo
+  return "${failed}"
 }
 
 main "$@"

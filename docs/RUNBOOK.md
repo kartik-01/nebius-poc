@@ -12,9 +12,28 @@ Only the wheelhouse has to be rebuilt or copied; the rest can be pointed at from
 
 ```bash
 git clone <repo> ~/repro && cd ~/repro
+./scripts/setup.sh --check                    # what is present, what is missing
+./scripts/setup.sh --from /path/to/checkout   # or --build with nothing to borrow from
+```
+
+`setup.sh` handles the venv, the config skeleton, the wheelhouse, and the verification run, and it
+is idempotent, so re-running costs seconds and repeats no downloads. `--from` reuses the images,
+wheelhouse and Hugging Face cache of an existing checkout on shared storage and rewrites only
+`SHARED_ROOT`, which is the one value that has to belong to the new clone. `--build` imports the
+images and prefetches the weights instead, which takes about 25 minutes.
+
+It never guesses cluster-specific values. Without `--from` it copies
+`configs/cluster.env.example` and leaves you to fill it in;
+`./scripts/discover_cluster.sh` reads partition, account, QoS and scratch off the cluster without
+writing them anywhere.
+
+### Doing it by hand
+
+```bash
+mkdir -p containers/images                 # gitignored, so the clone has no such directory
 cp -r <existing>/containers/images/wheels containers/images/wheels
 cp configs/cluster.env.example configs/cluster.env
-./scripts/discover_cluster.sh        # partition, account, QoS, scratch
+./scripts/discover_cluster.sh
 make install && make test
 ```
 
@@ -36,6 +55,19 @@ serving sweeps (about 30 m), using the commands in the sections below.
 identical 460 holdout questions, but training is not bit-reproducible: seeds are set,
 `torch.use_deterministic_algorithms` is not, and TF32 is on. Expect to land near +5.22 rather than
 exactly on it.
+
+### Then run it
+
+```bash
+./scripts/demo.sh              # every step, pausing between them
+./scripts/demo.sh accuracy     # a single step
+./scripts/demo.sh --reuse      # show the last training run instead of submitting a new one
+```
+
+Steps are `preflight`, `validate`, `train`, `accuracy`, `throughput`. `validate` and `train` submit
+Slurm jobs and follow them to completion; `accuracy` and `throughput` read `results/summary/` and
+need no cluster access. A failing step does not stop the ones after it. The sections below give the
+underlying sbatch commands for running any stage on its own.
 
 ## Local installation
 
