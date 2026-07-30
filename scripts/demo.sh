@@ -529,14 +529,38 @@ main() {
     PAUSE=0
   fi
 
-  # Only the steps that submit jobs need a partition. The display steps read
-  # results/summary/ and must work in a fresh clone, before configs/cluster.env
-  # exists, so anyone can see the numbers without cluster access.
+  # A step needs the cluster only if it will actually submit something. The
+  # display steps read results/summary/ and must work in a bare clone. --reuse
+  # removes the need too, but only where there is a recorded run to show instead,
+  # which a fresh clone does not have.
+  local needs_cluster=0 name
   for name in "${requested[@]}"; do
     case "${name}" in
-      validate|train) : "${SLURM_PARTITION:?set SLURM_PARTITION in configs/cluster.env}" ;;
+      validate) (( REUSE )) && latest_validate_run >/dev/null 2>&1 || needs_cluster=1 ;;
+      train)    (( REUSE )) && latest_train_run    >/dev/null 2>&1 || needs_cluster=1 ;;
     esac
   done
+  if (( MEASURE )); then
+    needs_cluster=1
+  fi
+
+  if (( needs_cluster )) && [[ -z "${SLURM_PARTITION:-}" ]]; then
+    fail "SLURM_PARTITION is not set, so nothing can be submitted."
+    echo
+    if (( REUSE )); then
+      note "--reuse looked for a recorded run under results/raw/ and found none."
+      note "A fresh clone ships the summaries, not the raw runs they came from."
+    fi
+    note "To run the live steps, fill in configs/cluster.env:"
+    note "  cp configs/cluster.env.example configs/cluster.env   # if it is missing"
+    note "  ./scripts/discover_cluster.sh                        # reads the values"
+    note "  ./scripts/setup.sh --check                           # confirms them"
+    echo
+    note "To see the recorded results without touching the cluster:"
+    note "  ./scripts/demo.sh accuracy throughput"
+    echo
+    return 2
+  fi
 
   local first=1 failed=0
   for name in "${requested[@]}"; do
