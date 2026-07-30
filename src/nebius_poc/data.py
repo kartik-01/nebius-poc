@@ -462,36 +462,51 @@ def main(argv: Sequence[str] | None = None) -> int:
     config = load_config(args.config)
     dataset = config["dataset"]
 
+    partition = {
+        "trainable_split": dataset["trainable_split"],
+        "holdout_fraction": dataset["holdout_fraction"],
+        "seed": dataset["seed"],
+    }
     questions = load_adaptation_pool(
         dataset["id"],
         dataset["config"],
         dataset["adaptation_split"],
         revision=dataset.get("revision"),
+        **partition,
     )
-    log.info("loaded %d records from the adaptation pool", len(questions))
+    holdout = evaluation_holdout(
+        dataset["id"], dataset["config"], revision=dataset.get("revision"), **partition
+    )
+    log.info(
+        "adaptation pool %d, evaluation holdout %d (reserved, never trained on)",
+        len(questions),
+        len(holdout),
+    )
 
     train, validation = split_adaptation_pool(
-        questions,
-        dataset["pilot_train_size"],
-        dataset["pilot_validation_size"],
-        dataset["seed"],
+        questions, dataset["pilot_validation_size"], dataset["seed"]
     )
 
-    audit = augmentation_audit(train, dataset["max_variants_per_question"])
+    audit = augmentation_audit(questions, dataset["max_variants_per_question"])
     try:
         dataset_revision = dataset.get("revision") or resolve_dataset_revision(dataset["id"])
     except (OSError, RuntimeError, ValueError, ConnectionError) as exc:
         log.warning("could not resolve dataset revision: %s", exc)
         dataset_revision = dataset.get("revision")
     manifest = split_manifest(
-        train, validation, dataset["seed"], dataset, dataset_revision=dataset_revision
+        train,
+        validation,
+        dataset["seed"],
+        dataset,
+        dataset_revision=dataset_revision,
+        holdout=holdout,
     )
 
     out = _run_directory(args.results_root)
     (out / "split_manifest.json").write_text(json.dumps(manifest, indent=2))
     (out / "augmentation_audit.json").write_text(json.dumps(audit, indent=2))
 
-    log.info("pilot train %d, pilot validation %d", len(train), len(validation))
+    log.info("pilot train %d, internal selection set %d", len(train), len(validation))
     log.info(
         "augmentation: %d of %d questions skipped as unsafe",
         audit["skipped_count"],

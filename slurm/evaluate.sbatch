@@ -1,13 +1,14 @@
 #!/bin/bash
-# Evaluate a base or tuned model. Defaults to the official test split; pass
-# IDS_FILE + SPLIT=validation for the internal 20-example pilot selection set.
+# Evaluate a base or tuned model. Defaults to the reserved evaluation holdout, the
+# share of the category's records that training never sees.
 #
 # Usage:
 #   source configs/cluster.env
 #   EVAL_LABEL=base sbatch slurm/evaluate.sbatch
 #   EVAL_LABEL=tuned EVAL_ADAPTER=results/raw/<run>/adapter sbatch slurm/evaluate.sbatch
-#   # pilot internal set:
-#   EVAL_SPLIT=validation IDS_FILE=results/raw/<prepare>/split_manifest.json \
+#   # pilot selection set: 100 questions held back inside the adaptation pool.
+#   # The pool spans both source splits, so EVAL_SPLIT must be pool, not validation.
+#   EVAL_SPLIT=pool IDS_FILE=results/raw/<train_run>/split_manifest.json \
 #     EVAL_MODE=forced_choice EVAL_LABEL=pilot-sft sbatch slurm/evaluate.sbatch
 #
 #SBATCH --job-name=nebius-evaluate
@@ -36,13 +37,15 @@ fi
 
 CONFIG="${EVAL_CONFIG:-configs/train_sft.yaml}"
 LABEL="${EVAL_LABEL:-base}"
-SPLIT="${EVAL_SPLIT:-test}"
+# Matches the default in nebius_poc.evaluate. Leaving this as the raw test split
+# would point the launcher at questions the model trained on.
+SPLIT="${EVAL_SPLIT:-holdout}"
 MODE="${EVAL_MODE:-both}"
 ADAPTER="${EVAL_ADAPTER:-}"
 IDS_FILE="${IDS_FILE:-}"
 LIMIT="${EVAL_LIMIT:-0}"
-# Scoring runs without gradients, so the full test split tolerates a much larger
-# batch than training does. Raise this to shorten the 1,534-question evaluations.
+# Scoring runs without gradients, so evaluation tolerates a much larger batch than
+# training does. Raise this to shorten the 460-question holdout evaluations.
 BATCH_SIZE="${EVAL_BATCH_SIZE:-0}"
 
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)_evaluate-${LABEL}_job${SLURM_JOB_ID}"
