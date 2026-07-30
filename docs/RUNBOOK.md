@@ -59,15 +59,22 @@ exactly on it.
 ### Then run it
 
 ```bash
-./scripts/demo.sh              # every step, pausing between them
-./scripts/demo.sh accuracy     # a single step
-./scripts/demo.sh --reuse      # show the last training run instead of submitting a new one
+./scripts/demo.sh                        # every step, pausing between them
+./scripts/demo.sh accuracy               # a single step
+./scripts/demo.sh --reuse                # recorded runs only, nothing reaches the cluster
+./scripts/demo.sh throughput --measure   # run the real serving sweep, about 40 minutes
 ```
 
 Steps are `preflight`, `validate`, `train`, `accuracy`, `throughput`. `validate` and `train` submit
 Slurm jobs and follow them to completion; `accuracy` and `throughput` read `results/summary/` and
 need no cluster access. A failing step does not stop the ones after it. The sections below give the
 underlying sbatch commands for running any stage on its own.
+
+`--reuse` shows the last completed validation and training runs rather than submitting new ones, so
+the walkthrough still works when the cluster is busy. `--measure` runs the serving chain for real:
+merge, all four topologies swept to their own saturation points, a soak, then aggregation into
+`results/summary/inference.json`. An EXIT trap cancels every server it started, including on Ctrl-C,
+so an interrupted sweep cannot leave GPUs held on a shared cluster.
 
 ## Local installation
 
@@ -496,6 +503,25 @@ Fleet p95 is recomputed from per-request records when the vLLM build emits them.
 vLLM 0.8.5 does not, so counts and throughput are summed exactly and percentiles
 fall back to the worst replica. Endpoint p95 values are never averaged, and every
 approximated point is labelled in the output.
+
+## Fleet sizing
+
+Converts the measured per-GPU goodput into a GPU count. Reads `inference.json`, so run it after
+the aggregation above:
+
+```bash
+.venv/bin/python scripts/size_fleet.py \
+  --inference results/summary/inference.json \
+  --target-tokens-per-s 10000 --target-tokens-per-s 50000 \
+  --target-tokens-per-s 100000 --target-tokens-per-s 500000 \
+  --headroom 0.2 \
+  --out results/summary/sizing.json
+```
+
+`--target-tokens-per-s` repeats once per scenario. `--headroom 0.2` sizes at 80 % of measured peak,
+because the peak sits on the guardrail boundary. `--gpu-hour-usd` is optional and omitted on
+purpose: with no price given the output reports GPU-hours per million output tokens and no cost
+figure, so nobody has to trust a made-up rate.
 
 ## Monitoring
 

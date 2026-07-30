@@ -132,10 +132,11 @@ accuracy. The 7B model is never fetched implicitly.
 ## Running it
 
 ```bash
-./scripts/demo.sh              # every step, pausing between them
-./scripts/demo.sh accuracy     # a single step
-./scripts/demo.sh --reuse      # show the last training run instead of submitting a new one
-./scripts/demo.sh --list       # the step names
+./scripts/demo.sh                        # every step, pausing between them
+./scripts/demo.sh accuracy               # a single step
+./scripts/demo.sh --reuse                # recorded runs only, nothing reaches the cluster
+./scripts/demo.sh throughput --measure   # run the real serving sweep, about 40 minutes
+./scripts/demo.sh --list                 # the step names
 ```
 
 Steps are `preflight`, `validate`, `train`, `accuracy`, `throughput`.
@@ -145,6 +146,13 @@ on their own, so nothing needs interrupting. `accuracy` and `throughput` read th
 tracked summaries under `results/summary/` and need no cluster access at all. A
 step that fails does not stop the ones after it.
 
+`--reuse` shows the last completed validation and training runs instead of
+submitting new ones, so the whole walkthrough works while the cluster is busy.
+`--measure` does the opposite for serving: it merges the adapter, sweeps all four
+topologies to their own saturation points, runs a soak, and rebuilds
+`results/summary/inference.json` from what it measured. Servers are cancelled on
+exit, including on Ctrl-C, so an interrupted sweep cannot leave GPUs held.
+
 For the underlying sbatch commands, monitoring, and troubleshooting, see
 `docs/RUNBOOK.md`.
 
@@ -153,4 +161,3 @@ For the underlying sbatch commands, monitoring, and troubleshooting, see
 - `docs/RESULTS.md` for measured results, generated from `results/summary/`
 - `docs/RUNBOOK.md` for exact reproduction, monitoring, and troubleshooting steps
 - `docs/DESIGN.md` for the decision log and the alternatives that were rejected
-- `docs/DEMO.md` for the presentation narrative and the live demo sequence
