@@ -49,10 +49,28 @@ compile_gpu_smoke() {
   nvcc -O2 -o "${IMG_DIR}/gpu_smoke" "${ROOT}/validator/gpu_smoke.cu"
 }
 
+# These wheels are installed inside TRAIN_IMAGE, never on the login node, so they
+# must match the container's interpreter rather than this one. The pinned pytorch
+# image ships 3.11; this login node runs 3.12. Downloading with the host default
+# produces cp312 wheels and the job then dies at startup with "No matching
+# distribution found", which is a confusing way to learn about a tag mismatch.
+CONTAINER_PYTHON="${CONTAINER_PYTHON:-3.11}"
+
 download_wheels() {
   mkdir -p "${IMG_DIR}/wheels"
-  log "download LoRA stack wheels into ${IMG_DIR}/wheels"
+  log "download LoRA stack wheels for container python ${CONTAINER_PYTHON} into ${IMG_DIR}/wheels"
+  # --python-version requires --only-binary, and the platform list has to cover
+  # every manylinux level the dependency tree publishes, since pip treats these
+  # as the complete set of acceptable tags rather than a minimum.
   python3 -m pip download -d "${IMG_DIR}/wheels" \
+    --python-version "${CONTAINER_PYTHON}" \
+    --only-binary=:all: \
+    --platform manylinux1_x86_64 \
+    --platform manylinux2014_x86_64 \
+    --platform manylinux_2_5_x86_64 \
+    --platform manylinux_2_17_x86_64 \
+    --platform manylinux_2_27_x86_64 \
+    --platform manylinux_2_28_x86_64 \
     "accelerate>=0.34" "datasets>=2.19" "numpy>=1.26" \
     "peft>=0.13" "pyyaml>=6.0" "transformers>=4.56"
 }

@@ -27,6 +27,9 @@ CHECK=0
 BUILD=0
 DONOR=""
 MISSING=0
+# Interpreter inside TRAIN_IMAGE, which the wheelhouse has to match. Keep this in
+# step with build_images_enroot.sh if the pinned image ever changes.
+CONTAINER_PYTHON="${CONTAINER_PYTHON:-3.11}"
 
 ok()   { printf '  %s%-22s%s %s\n' "${G}" "$1" "${N}" "${2:-}"; }
 todo() { printf '  %s%-22s%s %s\n' "${Y}" "$1" "${N}" "${2:-}"; MISSING=1; }
@@ -179,7 +182,17 @@ head_ "Wheelhouse"
 # Must live inside this checkout: container_python_setup.sh resolves it at
 # /workspace/containers/images/wheels, the mounted repo root inside the container.
 if [[ -d containers/images/wheels ]] && compgen -G 'containers/images/wheels/*' >/dev/null; then
-  ok "wheels" "$(find containers/images/wheels -type f | wc -l) files"
+  wheel_count="$(find containers/images/wheels -type f | wc -l)"
+  # A wheelhouse downloaded with the login node's interpreter looks complete but
+  # is unusable inside the container, which then fails at job startup with "No
+  # matching distribution found". Check the interpreter tag, not just the count.
+  want_tag="cp${CONTAINER_PYTHON//./}"
+  if compgen -G "containers/images/wheels/*-${want_tag}-*" >/dev/null; then
+    ok "wheels" "${wheel_count} files, built for python ${CONTAINER_PYTHON}"
+  else
+    bad "wheels" "${wheel_count} files, none tagged ${want_tag} for the container python"
+    note "rebuild with: ./scripts/build_images_enroot.sh wheels"
+  fi
 elif (( CHECK )); then
   todo "wheels" "missing, needed by the training and evaluation jobs"
 elif [[ -n "${DONOR}" && -d "${DONOR}/containers/images/wheels" ]]; then
