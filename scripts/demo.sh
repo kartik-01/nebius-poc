@@ -152,7 +152,10 @@ topology_resources() {
 wait_for_endpoints() {
   local job="$1" waited=0 run=""
   while (( waited < 900 )); do
-    run="$(ls -d results/raw/*serve-*_job"${job}" 2>/dev/null | head -1)"
+    # Absolute: this path becomes a pyxis --container-mounts source, and pyxis
+    # rejects a relative one. The runbook's manual recipe uses $SHARED_ROOT for
+    # the same reason.
+    run="$(ls -d "${ROOT}"/results/raw/*serve-*_job"${job}" 2>/dev/null | head -1)"
     if [[ -n "${run}" && -f "${run}/endpoints.json" ]]; then
       printf '\r%-72s\r' '' >&2
       printf '%s\n' "${run}"
@@ -203,7 +206,7 @@ measure_topology() {
             sbatch --parsable $(sbatch_args) --nodes=1 --gpus-per-node=0 \
             slurm/benchmark.sbatch)"
     if follow_job "${bench}" "logs/bench-${bench}.out" 'stage|concurrency|wrote'; then
-      BENCH_ROOTS+=("$(ls -d results/raw/*bench-${stage}_job"${bench}" 2>/dev/null | head -1)")
+      BENCH_ROOTS+=("$(ls -d "${ROOT}"/results/raw/*bench-${stage}_job"${bench}" 2>/dev/null | head -1)")
     else
       fail "${topo} ${stage} did not complete"
     fi
