@@ -120,7 +120,17 @@ cancel_serve_jobs() {
   done
   SERVE_JOBS=()
 }
-trap cancel_serve_jobs EXIT INT TERM
+# Ctrl-C must stop the sweep, not just release the current server and march on to
+# the next topology. The per-topology "|| true" is there so one bad topology does
+# not lose the rest, and it must not swallow a deliberate interrupt.
+on_interrupt() {
+  echo
+  warn "interrupted"
+  cancel_serve_jobs
+  exit 130
+}
+trap on_interrupt INT TERM
+trap cancel_serve_jobs EXIT
 
 # Slurm resources per topology. configs/serve_topologies.yaml is the source of
 # truth and serve.sbatch refuses a mismatch, so these must agree with it.
@@ -135,26 +145,30 @@ topology_resources() {
 
 # The serve run directory is stamped at job start, not at submit, so it can only
 # be found after the job is running. Guessing the timestamp wastes an allocation.
+# The run directory is returned on stdout and captured by the caller, so every
+# byte of progress output has to go to stderr. A stray spinner-clearing escape on
+# stdout ends up prepended to the path, and the failure surfaces much later as an
+# unreadable serve_manifest.json.
 wait_for_endpoints() {
   local job="$1" waited=0 run=""
   while (( waited < 900 )); do
     run="$(ls -d results/raw/*serve-*_job"${job}" 2>/dev/null | head -1)"
     if [[ -n "${run}" && -f "${run}/endpoints.json" ]]; then
-      printf '\r%-72s\r' ''
+      printf '\r%-72s\r' '' >&2
       printf '%s\n' "${run}"
       return 0
     fi
     if ! squeue -j "${job}" -h -o '%T' 2>/dev/null | grep -q .; then
-      printf '\r%-72s\r' ''
-      fail "serve job ${job} exited before publishing endpoints"
+      printf '\r%-72s\r' '' >&2
+      fail "serve job ${job} exited before publishing endpoints" >&2
       return 1
     fi
     sleep 5
     waited=$((waited + 5))
     printf '\r  %s waiting for endpoints  %ss ' "${frames:0:1}" "${waited}" >&2
   done
-  printf '\r%-72s\r' ''
-  fail "timed out waiting for endpoints from serve job ${job}"
+  printf '\r%-72s\r' '' >&2
+  fail "timed out waiting for endpoints from serve job ${job}" >&2
   return 1
 }
 
