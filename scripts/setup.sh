@@ -94,6 +94,45 @@ else
   note "run ./scripts/discover_cluster.sh to read the values off the cluster"
 fi
 
+# ------------------------------------------------------------------------ images
+head_ "Container images"
+env_path() { [[ -f configs/cluster.env ]] && grep -E "^$1=" configs/cluster.env | cut -d= -f2- || true; }
+
+# Record a path only when this script created the artifact and the key is still
+# blank, so a config carried over by --from or edited by hand is never clobbered.
+fill_env_if_empty() {
+  [[ -f configs/cluster.env ]] || return 0
+  local key="$1" val="$2" cur
+  cur="$(grep -E "^${key}=" configs/cluster.env | head -1 | cut -d= -f2-)"
+  [[ -z "${cur}" ]] || return 0
+  sed -i "s|^${key}=.*|${key}=${val}|" configs/cluster.env
+}
+
+if (( BUILD )) && (( ! CHECK )); then
+  note "importing base images and building the validator (about 15 minutes)"
+  # 'all' imports the images and downloads the wheelhouse in one pass, so the
+  # wheelhouse stage below has nothing left to do.
+  ./scripts/build_images_enroot.sh all
+  ./scripts/build_validator_sqsh.sh
+  # The Slurm values still need discovery, but these five are facts about what
+  # was just written, not guesses, so leaving them blank would be pointless work.
+  fill_env_if_empty SHARED_ROOT "${ROOT}"
+  fill_env_if_empty HF_HOME "${ROOT}/hf_cache"
+  fill_env_if_empty TRAIN_IMAGE "${ROOT}/containers/images/pytorch-2.5.1-cuda12.4-cudnn9-runtime.sqsh"
+  fill_env_if_empty VALIDATOR_IMAGE "${ROOT}/containers/images/validator.sqsh"
+  fill_env_if_empty VLLM_IMAGE "${ROOT}/containers/images/vllm-openai-v0.8.5.sqsh"
+  ok "images" "built, paths recorded in configs/cluster.env"
+fi
+
+for var in TRAIN_IMAGE VALIDATOR_IMAGE VLLM_IMAGE; do
+  path="$(env_path "${var}")"
+  if [[ -n "${path}" && -f "${path}" ]]; then
+    ok "${var}" "$(du -h "${path}" | cut -f1)"
+  else
+    todo "${var}" "${path:-unset in configs/cluster.env}"
+  fi
+done
+
 # -------------------------------------------------------------------- wheelhouse
 head_ "Wheelhouse"
 # Must live inside this checkout: container_python_setup.sh resolves it at
@@ -107,29 +146,8 @@ elif [[ -n "${DONOR}" && -d "${DONOR}/containers/images/wheels" ]]; then
   mkdir -p containers/images
   cp -r "${DONOR}/containers/images/wheels" containers/images/wheels
   ok "wheels" "copied"
-elif (( BUILD )); then
-  ./scripts/build_images_enroot.sh wheels
-  ok "wheels" "downloaded"
 else
   todo "wheels" "pass --from <checkout> to copy, or --build to download"
-fi
-
-# ------------------------------------------------------------------------ images
-head_ "Container images"
-env_path() { [[ -f configs/cluster.env ]] && grep -E "^$1=" configs/cluster.env | cut -d= -f2- || true; }
-for var in TRAIN_IMAGE VALIDATOR_IMAGE VLLM_IMAGE; do
-  path="$(env_path "${var}")"
-  if [[ -n "${path}" && -f "${path}" ]]; then
-    ok "${var}" "$(du -h "${path}" | cut -f1)"
-  elif (( CHECK )) || (( ! BUILD )); then
-    todo "${var}" "${path:-unset in configs/cluster.env}"
-  fi
-done
-if (( BUILD )) && (( ! CHECK )); then
-  note "importing base images and building the validator (about 15 minutes)"
-  ./scripts/build_images_enroot.sh all
-  ./scripts/build_validator_sqsh.sh
-  ok "images" "built"
 fi
 
 # --------------------------------------------------------------------- HF assets

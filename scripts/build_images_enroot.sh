@@ -67,6 +67,10 @@ print_env_hints() {
     echo "VALIDATOR_IMAGE=${IMG_DIR}/pytorch-2.5.1-cuda12.4-cudnn9-runtime.sqsh"
   [[ -f "${IMG_DIR}/vllm-openai-v0.8.5.sqsh" ]] && \
     echo "VLLM_IMAGE=${IMG_DIR}/vllm-openai-v0.8.5.sqsh"
+  # These hints are informational. Without this the last test above decides the
+  # function's exit status, so running a target that builds no images (wheels,
+  # gpu-smoke) would return 1 and abort any caller using set -e.
+  return 0
 }
 
 case "${TARGET}" in
